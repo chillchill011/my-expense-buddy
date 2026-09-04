@@ -1,79 +1,103 @@
-# Expense Tracker PWA + Dashboard Plan
+# Expense Tracker Dashboard PWA
 
 ## Goal
-Build a mobile-first Progressive Web App (PWA) and dashboard that reads from and writes to your existing Google Sheets expense database. Your Telegram bot continues to work as a separate input method.
+A mobile-first, read-only dashboard PWA that visualizes the expense, investment, and loan data already living in your Google Sheet. Your Telegram bot stays exactly as it is and remains the only way data gets written.
 
-## Why PWA instead of native iOS/Android
-Lovable builds web apps, not native mobile apps. A PWA gives you:
-- Instant access on iOS/Android via browser
-- Add-to-home-screen behavior like a native app
-- No App Store / Play Store approval delays
-- One codebase for mobile and dashboard
-- Reuses your existing Google Sheets backend
+## Why PWA, not native
+Lovable builds web apps. A PWA installs to your iPhone home screen, opens full-screen like an app, and needs no App Store review. It reuses your existing Google Sheet as the database, so there is no migration.
 
 ## Cost
-Lovable connectors are free. Google Sheets API also has a free quota. You only pay if you exceed Google's API limits or choose a paid Lovable plan.
+Lovable connectors are free. The Google Sheets API free quota is far above what this dashboard will use.
 
-## Proposed Architecture
+## Confirmed decisions
+- Read-only dashboard first. No writing to the sheet in this phase.
+- Simple user filter (aniketthanage / gauri_2009). Real login added later.
+- The manual summary block in monthly sheets (columns L-P) is ignored; the dashboard computes its own totals from the transaction rows.
+- `YYYY Overview` tabs should contain only that year's investments. The dashboard filters rows by actual date, so the stray 2025 rows in `2026 Overview` will not double-count, and the dashboard surfaces a small data-quality notice listing them.
+
+## Verified sheet structure
 
 ```text
-User (iPhone/browser)  <--->  Lovable PWA  <--->  TanStack Start server functions
-                                                          |
-                                                          v
-                                                 Google Sheets connector
-                                                          |
-                                                          v
-                                            Your existing Google Sheet
-                                                          |
-                                                          v
-                                              Telegram bot (kept as-is)
+Master                Expense Item | Category | Keywords          (+ category list in col F)
+Loan Master           Category | Bank | Description | Amount
+Investment Master     Category | Risk Level | Description
+Loan repayment        Date | Amount | User | Loan | Description
+Investment Summary    Year | Total Invested | Total Returns | ROI | Best Category
+                      (+ category x year pivot to the right)
+YYYY Overview         Date | Amount | Category | User | Description | Returns | Return Date
+YYYY-MM  (monthly)    Date | Amount | Description | Category | User | Details
 ```
 
-## Data model (from your repo)
-Your Google Sheet has these tabs:
-- `Master`: item -> category mapping
-- `Investment Master`: category, risk, platform
-- `Loan Master`: category, bank
-- `Loan Repayment`: date, amount, user, category, description
-- `Investment Summary`: year, total invested, total returns, ROI, best category
-- Monthly sheets named `YYYY-MM`: date, amount, user, category, description, details
+Note: monthly sheets put Description before Category, which differs from the repo README. The dashboard uses the real order above.
 
-## Build phases
+Known data quirks the dashboard must tolerate:
+- Dates appear both as real date cells and as `DD/MM/YYYY` text. A single parser handles both.
+- Some monthly sheets have trailing junk columns and a floating summary block; only columns A-F are read.
+- Category and user values are trimmed and case-normalized before grouping.
 
-### Phase 1: Connect Google Sheets and read data
-- Link the `google_sheets` connector to this project.
-- Build server functions that fetch:
-  - Monthly expense rows from the current month's sheet
-  - Category totals for the current month
-  - Investment and loan summaries
-- Render a dashboard with:
-  - Total spent this month
-  - Top spending categories
-  - Recent transactions list
+## What gets built
 
-### Phase 2: Add expense entry
-- Build a mobile-optimized form:
-  - Amount
-  - Description
-  - Details (optional)
-  - Date (default today)
-  - Category picker (auto-suggest from Master sheet, or manual)
-- Server function appends the row to the correct `YYYY-MM` sheet.
-- If the item is new, offer to save it to the `Master` sheet for future auto-categorization.
+### Data layer
+- Link the `google_sheets` connector to the project.
+- Server functions (never called from the browser directly) that read:
+  - Every `YYYY-MM` tab for a selected year, columns A-F
+  - `Loan repayment` and `Loan Master`
+  - All `YYYY Overview` tabs for investments, plus `Investment Master`
+  - `Master` for the category list
+- A shared normalizer converts every row to a clean typed record with a parsed date.
+- Results are cached so the dashboard does not re-hit the Sheets API on every render.
 
-### Phase 3: Dashboard polish + PWA
-- Add summary cards, category breakdown chart, and month selector.
-- Add a simple "user" selector so the app can attribute entries to the same users your Telegram bot uses.
-- Add PWA manifest and service worker so it can be saved to the iOS home screen.
-- Responsive layout that works on phone and desktop.
+### Dashboard screens
 
-## Out of scope for this plan
-- Replacing the Telegram bot
-- Native iOS/Android app store builds
-- Real-time sync / push notifications
-- Multi-user authentication (optional; can be added later with Lovable Cloud)
+**Overview (home)**
+- Current month total, previous month total, and percent change
+- Split by user for the month
+- Category breakdown as a ranked list with bars
+- Recent transactions list
+- Month and year selector
+
+**Expenses**
+- Full transaction table for the selected month, sorted by date
+- Filter by category and by user
+- Search by description
+- Monthly trend chart across the selected year
+
+**Investments**
+- Total invested per year and lifetime total
+- Breakdown by investment category with risk level from `Investment Master`
+- Year-on-year comparison chart
+- Per-user split
+
+**Loans**
+- Outstanding principal per loan from `Loan Master`
+- Total repaid per loan from `Loan repayment`
+- Repayment timeline chart
+- Per-user repayment split
+
+### PWA and design
+- Installable: manifest, icons, offline shell, standalone display mode
+- Bottom tab navigation sized for one-handed phone use, widening to a sidebar layout on desktop
+- Indian rupee formatting with lakh/crore grouping
+- A design system built around a calm dark financial palette, defined once in `src/styles.css` as semantic tokens
+
+## Technical notes
+- TanStack Start with server functions for all Sheets access, so the connector credential never reaches the browser
+- TanStack Query for caching and background refresh
+- Recharts for the trend and comparison charts
+- Route loaders prefetch data so the first paint already has numbers
+
+## Out of scope this phase
+- Writing or editing entries from the app
+- Replacing or modifying the Telegram bot
+- Per-user authentication
+- Native App Store / Play Store builds
 
 ## What I need from you to start
-1. Your Google Sheets spreadsheet URL or spreadsheet ID, and permission to connect it via the Lovable Google Sheets connector.
-2. Confirm the column order in your monthly sheets (e.g., Date, Amount, User, Category, Description, Details).
-3. Confirm whether you want multi-user support in the PWA, or just a single personal view.
+Your Google Sheet URL, and approval to link the Google Sheets connector so the dashboard reads live data instead of the uploaded snapshot.
+
+## Later phases (not now)
+1. Add expense entry from the phone, with auto-categorization from `Master`
+2. Investment and loan entry
+3. Edit and delete recent entries
+4. Real per-user login via Lovable Cloud
+5. Budgets and alerts
