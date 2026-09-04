@@ -82,7 +82,7 @@ export function normalizeLabel(cell: Cell): string {
   return t
     .split(" ")
     .map((word) =>
-      word.length <= 1 ? word.toUpperCase() : word[0].toUpperCase() + word.slice(1).toLowerCase(),
+      word.length <= 1 ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
     )
     .join(" ");
 }

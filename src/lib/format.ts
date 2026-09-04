@@ -102,7 +102,7 @@ export function userLabel(user: string): string {
   if (!user) return "Unknown";
   const cleaned = user.replace(/_\d+$/, "").replace(/[._]/g, " ").trim();
   if (!cleaned) return user;
-  return cleaned[0].toUpperCase() + cleaned.slice(1);
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }
 
 export function initials(user: string): string {
