@@ -20,6 +20,7 @@ import {
 } from "@/lib/analytics";
 import { dashboardQueryOptions } from "@/lib/dashboard-query";
 import { yearOf } from "@/lib/expense-normalize";
+import type { Expense, ExpenseDataset } from "@/lib/expense-types";
 import { dayLabel, money, monthLabel, userLabel } from "@/lib/format";
 
 export const Route = createFileRoute("/")({
@@ -62,7 +63,7 @@ function OverviewPage() {
   );
 }
 
-function Overview({ data }: { data: NonNullable<Extract<ReturnType<typeof Object>, never>> | any }) {
+function Overview({ data }: { data: ExpenseDataset }) {
   const { expenses, investments, loanRepayments, issues } = data;
 
   const months = useMemo(() => availableMonths(expenses), [expenses]);
@@ -156,7 +157,7 @@ function Overview({ data }: { data: NonNullable<Extract<ReturnType<typeof Object
           <EmptyState message="No transactions in this month." />
         ) : (
           <ul className="divide-y divide-border">
-            {recent.map((expense: any, i: number) => (
+            {recent.map((expense: Expense, i: number) => (
               <li key={i} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">
@@ -176,7 +177,7 @@ function Overview({ data }: { data: NonNullable<Extract<ReturnType<typeof Object
       </Panel>
 
       <p className="pb-2 text-center text-xs text-muted-foreground">
-        Reading {expenses.length} expenses across {new Set(expenses.map((e: any) => yearOf(e.date))).size} years
+        Reading {expenses.length} expenses across {new Set(expenses.map((e) => yearOf(e.date))).size} years
       </p>
     </div>
   );
