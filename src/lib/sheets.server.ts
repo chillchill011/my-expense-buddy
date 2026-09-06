@@ -34,7 +34,7 @@ function requireEnv() {
   if (!spreadsheetId) {
     throw new SheetsConfigError(
       "missing_spreadsheet_id",
-      "EXPENSE_SPREADSHEET_ID is not set. Save your spreadsheet ID as a secret to connect the dashboard.",
+      "Your expense sheet hasn't been linked yet, so there is nothing to show.",
     );
   }
   return { lovableKey, connectionKey, spreadsheetId };
