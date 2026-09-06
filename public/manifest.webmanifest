@@ -1,0 +1,25 @@
+{
+  "name": "Expense Tracker Dashboard",
+  "short_name": "Expense",
+  "description": "Household expenses, investments and loans from your Google Sheet.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#12141c",
+  "theme_color": "#12141c",
+  "icons": [
+    {
+      "src": "/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
