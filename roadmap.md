@@ -8,5 +8,5 @@
 - [x] Investments screen (per year, categories with risk, YoY, per-person)
 - [x] Loans screen (payoff progress, repayment timeline, per-person)
 - [x] PWA: manifest, icon, offline shell, standalone mode
-- [ ] Connect the actual spreadsheet ID (waiting on the sheet link)
+- [x] Connect the actual spreadsheet ID
 - [ ] Later: add-entry flow, per-user login
