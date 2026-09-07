@@ -41,8 +41,8 @@ export function parseDate(cell: Cell): string | null {
   const raw = String(cell).trim();
   if (!raw) return null;
 
-  // ISO first: 2025-08-14 or 2025-08-14T...
-  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  // Year-first: 2025-08-14, 2025/08/14 or 2025-08-14T...
+  const iso = /^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})/.exec(raw);
   if (iso) return toIso(Number(iso[1]), Number(iso[2]), Number(iso[3]));
 
   // Day-first with / . or - separators: 18/01/2025
