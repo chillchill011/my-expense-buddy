@@ -67,7 +67,13 @@ function Overview({ data }: { data: ExpenseDataset }) {
   const { expenses, investments, loanRepayments, issues } = data;
 
   const months = useMemo(() => availableMonths(expenses), [expenses]);
-  const [month, setMonth] = useState(() => months[0] ?? "");
+  // Start on the real current month, never a stray future-dated row.
+  const [month, setMonth] = useState(() => {
+    const now = new Date();
+    const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    if (months.includes(current)) return current;
+    return months.find((m) => m <= current) ?? months[0] ?? "";
+  });
 
   const monthExpenses = useMemo(() => inMonth(expenses, month), [expenses, month]);
   const prevKey = previousMonthKey(month || "2000-01");
