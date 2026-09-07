@@ -85,9 +85,13 @@ export async function batchGetRanges(ranges: string[]): Promise<Map<string, Row[
 
   for (let i = 0; i < ranges.length; i += CHUNK) {
     const chunk = ranges.slice(i, i + CHUNK);
+    // FORMATTED_VALUE keeps dates exactly as they read in the sheet (DD/MM/YYYY).
+    // Raw serial numbers are unreliable here: the bot writes day-first text and
+    // the spreadsheet locale silently parses "05/09/2026" as 9 May, so anything
+    // with a day of 12 or less came back with day and month swapped.
     const search = new URLSearchParams({
-      valueRenderOption: "UNFORMATTED_VALUE",
-      dateTimeRenderOption: "SERIAL_NUMBER",
+      valueRenderOption: "FORMATTED_VALUE",
+      dateTimeRenderOption: "FORMATTED_STRING",
       majorDimension: "ROWS",
     });
     for (const range of chunk) search.append("ranges", range);
