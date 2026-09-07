@@ -65,7 +65,11 @@ function Expenses({ data }: { data: ExpenseDataset }) {
     () => availableYears(data.expenses, data.investments, data.loanRepayments),
     [data],
   );
-  const [year, setYear] = useState(() => years[0] ?? new Date().getFullYear());
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState(() =>
+    years.includes(currentYear) ? currentYear : (years[0] ?? currentYear),
+  );
+  const [month, setMonth] = useState("all");
   const [category, setCategory] = useState("all");
   const [user, setUser] = useState("all");
   const [search, setSearch] = useState("");
@@ -78,6 +82,7 @@ function Expenses({ data }: { data: ExpenseDataset }) {
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return yearExpenses.filter((e) => {
+      if (month !== "all" && e.date.slice(5, 7) !== month) return false;
       if (category !== "all" && e.category !== category) return false;
       if (user !== "all" && e.user !== user) return false;
       if (needle && !`${e.description} ${e.details} ${e.category}`.toLowerCase().includes(needle))
