@@ -20,6 +20,14 @@ export class SheetsConfigError extends Error {
   }
 }
 
+/** Thrown when Google's per-minute read quota is exhausted even after one retry. */
+export class SheetsRateLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SheetsRateLimitError";
+  }
+}
+
 function requireEnv() {
   const lovableKey = process.env["LOVABLE_API_KEY"];
   const connectionKey = process.env["GOOGLE_SHEETS_API_KEY"];
@@ -43,18 +51,29 @@ function requireEnv() {
 async function gatewayGet(path: string, search: URLSearchParams): Promise<unknown> {
   const { lovableKey, connectionKey } = requireEnv();
   const url = `${GATEWAY_URL}${path}?${search.toString()}`;
+  const headers = {
+    Authorization: `Bearer ${lovableKey}`,
+    "X-Connection-Api-Key": connectionKey,
+    Accept: "application/json",
+  };
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${lovableKey}`,
-      "X-Connection-Api-Key": connectionKey,
-      Accept: "application/json",
-    },
-  });
+  let response = await fetch(url, { headers });
+  // The connector's Google project is shared, so its per-minute read quota can
+  // be exhausted by other apps. Wait for the minute window to roll over and
+  // retry once before giving up.
+  if (response.status === 429) {
+    await new Promise((resolve) => setTimeout(resolve, 20_000));
+    response = await fetch(url, { headers });
+  }
 
   if (!response.ok) {
     const body = await response.text();
     console.error(`Google Sheets gateway request failed [${response.status}]: ${body}`);
+    if (response.status === 429) {
+      throw new SheetsRateLimitError(
+        "Your sheet is busy right now — this usually clears within a minute.",
+      );
+    }
     throw new Error(`Google Sheets request failed [${response.status}]: ${body.slice(0, 500)}`);
   }
 

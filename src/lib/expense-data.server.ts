@@ -34,7 +34,9 @@ const INVESTMENT_MASTER_TAB = "Investment Master";
 /** The bot has used both spellings over time. */
 const LOAN_REPAYMENT_TABS = ["Loan repayment", "Loan Repayment"];
 
-const CACHE_TTL_MS = 60_000;
+// The sheet only changes when the Telegram bot writes, so 5 minutes of caching
+// is plenty and keeps us well under Google's shared per-minute read quota.
+const CACHE_TTL_MS = 5 * 60_000;
 let cache: { data: ExpenseDataset; at: number } | null = null;
 
 export function invalidateExpenseCache(): void {
