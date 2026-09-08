@@ -28,7 +28,16 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const people = data.users.length ? data.users : ["aniketthanage", "gauri_2009"];
+  // Several sheet handles collapse to the same friendly name, so show the raw
+  // handle whenever the label alone would be ambiguous.
+  const labelCounts = new Map<string, number>();
+  for (const person of people) {
+    labelCounts.set(userLabel(person), (labelCounts.get(userLabel(person)) ?? 0) + 1);
+  }
+  const personLabel = (person: string) =>
+    (labelCounts.get(userLabel(person)) ?? 0) > 1 ? person : userLabel(person);
   const [user, setUser] = useState(people[0]!);
+
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
