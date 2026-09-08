@@ -189,7 +189,7 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
 
       {saved ? (
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-2.5 text-xs">
-          <Check className="size-4 text-success" />
+          <Check className="size-4 text-positive" />
           <span className="text-foreground">
             <span className="num font-semibold">{money(saved.amount)}</span> · {saved.description} ·{" "}
             {saved.category} · {userLabel(saved.user)}
