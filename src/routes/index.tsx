@@ -8,6 +8,7 @@ import { DataQualityNotice, SetupNotice } from "@/components/DashboardState";
 import { SelectField } from "@/components/Filters";
 import { EmptyState, Panel, RankedBars, SectionHeading, UserSplit } from "@/components/Panels";
 import { QuickAdd } from "@/components/QuickAdd";
+import { RecentTransactions } from "@/components/TransactionList";
 
 import { DeltaBadge, StatCard } from "@/components/StatCard";
 import {
@@ -22,8 +23,8 @@ import {
 } from "@/lib/analytics";
 import { dashboardQueryOptions } from "@/lib/dashboard-query";
 import { yearOf } from "@/lib/expense-normalize";
-import type { Expense, ExpenseDataset } from "@/lib/expense-types";
-import { dayLabel, money, monthLabel, userLabel } from "@/lib/format";
+import type { ExpenseDataset } from "@/lib/expense-types";
+import { money, monthLabel, userLabel } from "@/lib/format";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
@@ -87,8 +88,6 @@ function Overview({ data }: { data: ExpenseDataset }) {
   const year = month ? Number(month.slice(0, 4)) : new Date().getFullYear();
   const yearInvested = sum(inYear(investments, year));
   const yearRepaid = sum(inYear(loanRepayments, year));
-
-  const recent = monthExpenses.slice(0, 8);
 
   if (months.length === 0) {
     return <EmptyState message="No expenses found in your sheet yet." />;
@@ -162,28 +161,11 @@ function Overview({ data }: { data: ExpenseDataset }) {
       </div>
 
       <Panel>
-        <SectionHeading title="Latest transactions" description={`Most recent in ${monthLabel(month)}`} />
-        {recent.length === 0 ? (
-          <EmptyState message="No transactions in this month." />
-        ) : (
-          <ul className="divide-y divide-border">
-            {recent.map((expense: Expense, i: number) => (
-              <li key={i} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {expense.description || expense.category}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {expense.category} · {userLabel(expense.user)} · {dayLabel(expense.date)}
-                  </p>
-                </div>
-                <span className="num shrink-0 text-sm font-semibold text-foreground">
-                  {money(expense.amount)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <SectionHeading
+          title="Latest transactions"
+          description={`Last 5 in ${monthLabel(month)}`}
+        />
+        <RecentTransactions expenses={monthExpenses} monthLabel={monthLabel(month)} limit={5} />
       </Panel>
 
       <p className="pb-2 text-center text-xs text-muted-foreground">
