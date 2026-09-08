@@ -163,28 +163,11 @@ function Overview({ data }: { data: ExpenseDataset }) {
       </div>
 
       <Panel>
-        <SectionHeading title="Latest transactions" description={`Most recent in ${monthLabel(month)}`} />
-        {recent.length === 0 ? (
-          <EmptyState message="No transactions in this month." />
-        ) : (
-          <ul className="divide-y divide-border">
-            {recent.map((expense: Expense, i: number) => (
-              <li key={i} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {expense.description || expense.category}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {expense.category} · {userLabel(expense.user)} · {dayLabel(expense.date)}
-                  </p>
-                </div>
-                <span className="num shrink-0 text-sm font-semibold text-foreground">
-                  {money(expense.amount)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <SectionHeading
+          title="Latest transactions"
+          description={`Last 5 in ${monthLabel(month)}`}
+        />
+        <RecentTransactions expenses={monthExpenses} monthLabel={monthLabel(month)} limit={5} />
       </Panel>
 
       <p className="pb-2 text-center text-xs text-muted-foreground">
