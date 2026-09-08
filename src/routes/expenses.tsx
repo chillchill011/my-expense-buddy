@@ -136,8 +136,17 @@ function Expenses({ data }: { data: ExpenseDataset }) {
         <SelectField
           ariaLabel="Choose year"
           value={String(year)}
-          onChange={(v) => setYear(Number(v))}
+          onChange={(v) => {
+            setYear(Number(v));
+            setMonth("all");
+          }}
           options={years.map((y) => ({ value: String(y), label: String(y) }))}
+        />
+        <SelectField
+          ariaLabel="Filter by month"
+          value={month}
+          onChange={setMonth}
+          options={monthOptions}
         />
         <SelectField
           ariaLabel="Filter by category"
