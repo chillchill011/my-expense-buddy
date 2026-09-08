@@ -89,8 +89,6 @@ function Overview({ data }: { data: ExpenseDataset }) {
   const yearInvested = sum(inYear(investments, year));
   const yearRepaid = sum(inYear(loanRepayments, year));
 
-  const recent = monthExpenses.slice(0, 8);
-
   if (months.length === 0) {
     return <EmptyState message="No expenses found in your sheet yet." />;
   }
