@@ -89,7 +89,7 @@ function Expenses({ data }: { data: ExpenseDataset }) {
         return false;
       return true;
     });
-  }, [yearExpenses, category, user, search]);
+  }, [yearExpenses, month, category, user, search]);
 
   const series = useMemo(() => monthlySeries(filtered, year), [filtered, year]);
   const total = sum(filtered);
