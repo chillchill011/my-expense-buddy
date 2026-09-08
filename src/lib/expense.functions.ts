@@ -9,11 +9,9 @@ export type DashboardResult =
   | { status: "setup"; code: "missing_spreadsheet_id" | "missing_credentials"; message: string }
   | { status: "error"; message: string; reason?: "rate_limited" | "no_access" };
 
-type AuthedContext = { supabase: { from: (t: string) => never } } & Record<string, unknown>;
-
 /** The spreadsheet linked to the signed-in account, or null when none is set. */
 async function spreadsheetFor(context: {
-  supabase: ReturnType<typeof requireSupabaseAuth> extends never ? never : any;
+  supabase: { from: (table: "user_settings") => any };
   userId: string;
 }): Promise<string | null> {
   const { data } = await context.supabase
