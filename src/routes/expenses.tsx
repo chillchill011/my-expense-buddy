@@ -27,9 +27,10 @@ import { StatCard } from "@/components/StatCard";
 
 import { availableYears, byCategory, monthlySeries, sum } from "@/lib/analytics";
 import { dashboardQueryOptions } from "@/lib/dashboard-query";
-import { yearOf } from "@/lib/expense-normalize";
+import { monthKeyOf, yearOf } from "@/lib/expense-normalize";
 import type { ExpenseDataset } from "@/lib/expense-types";
-import { MONTH_SHORT, fullDateLabel, money, moneyCompact, userLabel } from "@/lib/format";
+import { MONTH_SHORT, money, moneyCompact, monthLabel } from "@/lib/format";
+import { RecentTransactions } from "@/components/TransactionList";
 
 export const Route = createFileRoute("/expenses")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
