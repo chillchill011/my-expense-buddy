@@ -29,7 +29,7 @@ import { yearOf } from "@/lib/expense-normalize";
 import type { ExpenseDataset } from "@/lib/expense-types";
 import { money, moneyCompact } from "@/lib/format";
 
-export const Route = createFileRoute("/investments")({
+export const Route = createFileRoute("/_authenticated/investments")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
   head: () => ({
     meta: [
