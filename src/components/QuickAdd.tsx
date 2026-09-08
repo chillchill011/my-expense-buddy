@@ -151,7 +151,7 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
         >
           {people.map((person) => (
             <option key={person} value={person}>
-              {userLabel(person)}
+              {personLabel(person)}
             </option>
           ))}
         </select>
