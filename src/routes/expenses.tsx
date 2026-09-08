@@ -98,6 +98,12 @@ function Expenses({ data }: { data: ExpenseDataset }) {
   const total = sum(filtered);
   const busiest = series.reduce((a, b) => (b.total > a.total ? b : a), series[0]!);
 
+  const currentMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const currentMonthExpenses = useMemo(
+    () => data.expenses.filter((e) => monthKeyOf(e.date) === currentMonthKey),
+    [data.expenses, currentMonthKey],
+  );
+
   const categoryOptions = [
     { value: "all", label: "All categories" },
     ...Array.from(new Set(yearExpenses.map((e) => e.category)))
