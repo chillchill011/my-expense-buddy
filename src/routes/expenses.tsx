@@ -27,7 +27,7 @@ import { availableYears, byCategory, monthlySeries, sum } from "@/lib/analytics"
 import { dashboardQueryOptions } from "@/lib/dashboard-query";
 import { yearOf } from "@/lib/expense-normalize";
 import type { ExpenseDataset } from "@/lib/expense-types";
-import { fullDateLabel, money, moneyCompact, userLabel } from "@/lib/format";
+import { MONTH_SHORT, fullDateLabel, money, moneyCompact, userLabel } from "@/lib/format";
 
 export const Route = createFileRoute("/expenses")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
