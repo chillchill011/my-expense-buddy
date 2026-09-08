@@ -1,4 +1,4 @@
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { AlertTriangle, Clock, KeyRound, TriangleAlert } from "lucide-react";
 
 import type { DashboardResult } from "@/lib/expense.functions";
@@ -46,10 +46,12 @@ export function SetupNotice({ result }: { result: DashboardResult }) {
         </button>
       ) : null}
       {isSetup && result.code === "missing_spreadsheet_id" ? (
-        <p className="mt-4 rounded-lg bg-muted/60 px-4 py-3 text-left text-xs text-muted-foreground">
-          Send the link to your expense sheet in chat and it will be connected for you. Nothing in
-          the sheet gets changed — the dashboard only reads it.
-        </p>
+        <Link
+          to="/setup"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+        >
+          Connect a sheet
+        </Link>
       ) : null}
     </div>
   );
