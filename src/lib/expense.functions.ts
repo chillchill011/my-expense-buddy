@@ -1,24 +1,52 @@
 import { createServerFn } from "@tanstack/react-start";
 
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
 import { EMPTY_DATASET, type ExpenseDataset } from "./expense-types";
 
 export type DashboardResult =
   | { status: "ok"; data: ExpenseDataset }
   | { status: "setup"; code: "missing_spreadsheet_id" | "missing_credentials"; message: string }
-  | { status: "error"; message: string; reason?: "rate_limited" };
+  | { status: "error"; message: string; reason?: "rate_limited" | "no_access" };
+
+type AuthedContext = { supabase: { from: (t: string) => never } } & Record<string, unknown>;
+
+/** The spreadsheet linked to the signed-in account, or null when none is set. */
+async function spreadsheetFor(context: {
+  supabase: ReturnType<typeof requireSupabaseAuth> extends never ? never : any;
+  userId: string;
+}): Promise<string | null> {
+  const { data } = await context.supabase
+    .from("user_settings")
+    .select("spreadsheet_id")
+    .eq("user_id", context.userId)
+    .maybeSingle();
+  return (data?.spreadsheet_id as string | null) ?? null;
+}
 
 /**
- * Single entry point for all dashboard data. Returns a discriminated result
- * instead of throwing so the UI can render a helpful setup screen when the
- * spreadsheet has not been wired up yet.
+ * Single entry point for all dashboard data, scoped to the signed-in account's
+ * own spreadsheet. Returns a discriminated result instead of throwing so the UI
+ * can render a helpful setup screen when no sheet is linked yet.
  */
-export const getExpenseDashboard = createServerFn({ method: "GET" }).handler(
-  async (): Promise<DashboardResult> => {
+export const getExpenseDashboard = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<DashboardResult> => {
     const { loadExpenseDataset } = await import("./expense-data.server");
-    const { SheetsConfigError, SheetsRateLimitError } = await import("./sheets.server");
+    const { SheetsAccessError, SheetsConfigError, SheetsRateLimitError } = await import(
+      "./sheets.server"
+    );
 
     try {
-      const data = await loadExpenseDataset();
+      const spreadsheetId = await spreadsheetFor(context);
+      if (!spreadsheetId) {
+        return {
+          status: "setup",
+          code: "missing_spreadsheet_id",
+          message: "Link your Google Sheet to see your dashboard.",
+        };
+      }
+      const data = await loadExpenseDataset(spreadsheetId);
       return { status: "ok", data };
     } catch (error) {
       if (error instanceof SheetsConfigError) {
@@ -27,12 +55,14 @@ export const getExpenseDashboard = createServerFn({ method: "GET" }).handler(
       if (error instanceof SheetsRateLimitError) {
         return { status: "error", reason: "rate_limited", message: error.message };
       }
+      if (error instanceof SheetsAccessError) {
+        return { status: "error", reason: "no_access", message: error.message };
+      }
       const message = error instanceof Error ? error.message : String(error);
       console.error("Failed to load expense dashboard:", message);
       return { status: "error", message };
     }
-  },
-);
+  });
 
 export function datasetOf(result: DashboardResult): ExpenseDataset {
   return result.status === "ok" ? result.data : EMPTY_DATASET;
@@ -66,6 +96,7 @@ function dmy(now: Date): string {
  * bot does: Date | Amount | Description | Category | User | Details.
  */
 export const addExpense = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: AddExpenseInput) => {
     const amount = Number(input.amount);
     if (!Number.isFinite(amount) || amount <= 0) throw new Error("Invalid amount");
@@ -79,7 +110,7 @@ export const addExpense = createServerFn({ method: "POST" })
       user: String(input.user ?? "").trim().slice(0, 60) || "unknown",
     } satisfies AddExpenseInput;
   })
-  .handler(async ({ data }): Promise<AddExpenseResult> => {
+  .handler(async ({ data, context }): Promise<AddExpenseResult> => {
     const { appendRow, listTabTitles } = await import("./sheets.server");
     const { invalidateExpenseCache } = await import("./expense-data.server");
 
@@ -87,7 +118,12 @@ export const addExpense = createServerFn({ method: "POST" })
     const tab = monthTab(now);
 
     try {
-      const titles = await listTabTitles();
+      const spreadsheetId = await spreadsheetFor(context);
+      if (!spreadsheetId) {
+        return { status: "error", message: "Link your Google Sheet before adding entries." };
+      }
+
+      const titles = await listTabTitles(spreadsheetId);
       if (!titles.includes(tab)) {
         return {
           status: "no_tab",
@@ -96,7 +132,7 @@ export const addExpense = createServerFn({ method: "POST" })
         };
       }
 
-      const row = await appendRow(tab, [
+      const row = await appendRow(spreadsheetId, tab, [
         dmy(now),
         data.amount,
         data.description,
@@ -105,7 +141,7 @@ export const addExpense = createServerFn({ method: "POST" })
         data.details,
       ]);
 
-      invalidateExpenseCache();
+      invalidateExpenseCache(spreadsheetId);
       return { status: "added", tab, row, date: dmy(now) };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -120,34 +156,39 @@ export const addExpense = createServerFn({ method: "POST" })
  * from the Telegram bot can never be removed by an undo.
  */
 export const undoExpense = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: { tab: string; row: number; amount: number; description: string }) => ({
     tab: String(input.tab),
     row: Number(input.row),
     amount: Number(input.amount),
     description: String(input.description ?? ""),
   }))
-  .handler(async ({ data }): Promise<{ status: "removed" | "skipped"; message?: string }> => {
-    const { a1, deleteRow, getRange } = await import("./sheets.server");
-    const { invalidateExpenseCache } = await import("./expense-data.server");
+  .handler(
+    async ({ data, context }): Promise<{ status: "removed" | "skipped"; message?: string }> => {
+      const { a1, deleteRow, getRange } = await import("./sheets.server");
+      const { invalidateExpenseCache } = await import("./expense-data.server");
 
-    try {
-      const range = a1(data.tab, `A${data.row}:F${data.row}`);
-      const rows = await getRange(range);
-      const row = rows[0];
-      const amount = Number(String(row?.[1] ?? "").replace(/[^0-9.-]/g, ""));
-      const description = String(row?.[2] ?? "").trim();
+      try {
+        const spreadsheetId = await spreadsheetFor(context);
+        if (!spreadsheetId) return { status: "skipped", message: "No sheet is linked." };
 
-      if (!row || amount !== data.amount || description !== data.description.trim()) {
-        return { status: "skipped", message: "That entry has already changed in the sheet." };
+        const range = a1(data.tab, `A${data.row}:F${data.row}`);
+        const rows = await getRange(spreadsheetId, range);
+        const row = rows[0];
+        const amount = Number(String(row?.[1] ?? "").replace(/[^0-9.-]/g, ""));
+        const description = String(row?.[2] ?? "").trim();
+
+        if (!row || amount !== data.amount || description !== data.description.trim()) {
+          return { status: "skipped", message: "That entry has already changed in the sheet." };
+        }
+
+        await deleteRow(spreadsheetId, data.tab, data.row);
+        invalidateExpenseCache(spreadsheetId);
+        return { status: "removed" };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("Failed to undo expense:", message);
+        return { status: "skipped", message };
       }
-
-      await deleteRow(data.tab, data.row);
-      invalidateExpenseCache();
-      return { status: "removed" };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error("Failed to undo expense:", message);
-      return { status: "skipped", message };
-    }
-  });
-
+    },
+  );
