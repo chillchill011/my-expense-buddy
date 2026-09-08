@@ -238,9 +238,11 @@ export async function loadExpenseDataset(force = false): Promise<ExpenseDataset>
     investmentAccounts,
     categories,
     users,
+    rules,
     issues,
     fetchedAt: Date.now(),
   };
+
 
   cache = { data, at: Date.now() };
   return data;
