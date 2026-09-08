@@ -101,9 +101,24 @@ function Expenses({ data }: { data: ExpenseDataset }) {
       .sort()
       .map((c) => ({ value: c, label: c })),
   ];
+  const labelCounts = new Map<string, number>();
+  for (const u of data.users) {
+    labelCounts.set(userLabel(u), (labelCounts.get(userLabel(u)) ?? 0) + 1);
+  }
   const userOptions = [
     { value: "all", label: "Everyone" },
-    ...data.users.map((u) => ({ value: u, label: userLabel(u) })),
+    ...data.users.map((u) => ({
+      value: u,
+      // Several sheet handles collapse to the same display name, so show the raw
+      // handle whenever the friendly label would be ambiguous.
+      label: (labelCounts.get(userLabel(u)) ?? 0) > 1 ? u : userLabel(u),
+    })),
+  ];
+
+  const monthsInYear = Array.from(new Set(yearExpenses.map((e) => e.date.slice(5, 7)))).sort();
+  const monthOptions = [
+    { value: "all", label: "All months" },
+    ...monthsInYear.map((m) => ({ value: m, label: MONTH_SHORT[Number(m) - 1] ?? m })),
   ];
 
   return (
