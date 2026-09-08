@@ -26,7 +26,7 @@ import { yearOf } from "@/lib/expense-normalize";
 import type { ExpenseDataset } from "@/lib/expense-types";
 import { money, monthLabel, userLabel } from "@/lib/format";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
   head: () => ({
     meta: [

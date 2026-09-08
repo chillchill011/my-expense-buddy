@@ -26,7 +26,7 @@ import { dashboardQueryOptions } from "@/lib/dashboard-query";
 import type { ExpenseDataset } from "@/lib/expense-types";
 import { fullDateLabel, money, moneyCompact, monthLabelShort } from "@/lib/format";
 
-export const Route = createFileRoute("/loans")({
+export const Route = createFileRoute("/_authenticated/loans")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
   head: () => ({
     meta: [

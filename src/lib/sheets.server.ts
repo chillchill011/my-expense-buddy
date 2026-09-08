@@ -1,15 +1,20 @@
 /**
- * Server-only Google Sheets reader.
+ * Server-only Google Sheets reader/writer.
  *
- * All requests go through the Lovable connector gateway, so the Google
- * credential never exists in the browser bundle. Values are requested
- * UNFORMATTED with SERIAL_NUMBER dates, which makes parsing deterministic
- * regardless of the spreadsheet's locale settings.
+ * Two credential modes, picked automatically:
+ *   1. A Google service account (self-hosting and multi-user). Each user shares
+ *      their own sheet with the service account address.
+ *   2. Lovable's Google Sheets connector, kept as a fallback so an existing
+ *      single-sheet deployment keeps working.
+ *
+ * Either way the credential lives only on the server; the browser never sees it.
  */
 
 import type { Row } from "./expense-normalize";
+import { getGoogleAccessToken, hasServiceAccount } from "./google-auth.server";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_sheets/v4";
+const GOOGLE_API_URL = "https://sheets.googleapis.com/v4";
 
 export class SheetsConfigError extends Error {
   readonly code: "missing_spreadsheet_id" | "missing_credentials";
@@ -28,93 +33,103 @@ export class SheetsRateLimitError extends Error {
   }
 }
 
-function requireEnv() {
+/** Thrown when the sheet exists but this app has not been given access to it. */
+export class SheetsAccessError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SheetsAccessError";
+  }
+}
+
+async function requestConfig(): Promise<{ base: string; headers: Record<string, string> }> {
+  if (hasServiceAccount()) {
+    const token = await getGoogleAccessToken();
+    return {
+      base: GOOGLE_API_URL,
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    };
+  }
+
   const lovableKey = process.env["LOVABLE_API_KEY"];
   const connectionKey = process.env["GOOGLE_SHEETS_API_KEY"];
-  const spreadsheetId = process.env["EXPENSE_SPREADSHEET_ID"];
-
   if (!lovableKey || !connectionKey) {
     throw new SheetsConfigError(
       "missing_credentials",
-      "The Google Sheets connector is not linked to this project yet.",
+      "This app hasn't been given access to Google Sheets yet.",
     );
   }
-  if (!spreadsheetId) {
-    throw new SheetsConfigError(
-      "missing_spreadsheet_id",
-      "Your expense sheet hasn't been linked yet, so there is nothing to show.",
-    );
-  }
-  return { lovableKey, connectionKey, spreadsheetId };
+  return {
+    base: GATEWAY_URL,
+    headers: {
+      Authorization: `Bearer ${lovableKey}`,
+      "X-Connection-Api-Key": connectionKey,
+      Accept: "application/json",
+    },
+  };
 }
 
-async function gatewayGet(path: string, search: URLSearchParams): Promise<unknown> {
-  const { lovableKey, connectionKey } = requireEnv();
-  const url = `${GATEWAY_URL}${path}?${search.toString()}`;
-  const headers = {
-    Authorization: `Bearer ${lovableKey}`,
-    "X-Connection-Api-Key": connectionKey,
-    Accept: "application/json",
-  };
+function requireId(spreadsheetId: string | null | undefined): string {
+  const id = (spreadsheetId ?? "").trim();
+  if (!id) {
+    throw new SheetsConfigError(
+      "missing_spreadsheet_id",
+      "No spreadsheet is linked to this account yet.",
+    );
+  }
+  return id;
+}
+
+function handleFailure(status: number, body: string): never {
+  console.error(`Google Sheets request failed [${status}]: ${body}`);
+  if (status === 429) {
+    throw new SheetsRateLimitError(
+      "Your sheet is busy right now — this usually clears within a minute.",
+    );
+  }
+  if (status === 403 || status === 404) {
+    throw new SheetsAccessError(
+      "This app can't open that spreadsheet. Check the link and make sure it's shared with the app.",
+    );
+  }
+  throw new Error(`Google Sheets request failed [${status}]: ${body.slice(0, 500)}`);
+}
+
+async function sheetsGet(path: string, search: URLSearchParams): Promise<unknown> {
+  const { base, headers } = await requestConfig();
+  const url = `${base}${path}?${search.toString()}`;
 
   let response = await fetch(url, { headers });
-  // The connector's Google project is shared, so its per-minute read quota can
-  // be exhausted by other apps. Wait for the minute window to roll over and
-  // retry once before giving up.
+  // Google's per-minute read quota can be exhausted transiently. Wait for the
+  // minute window to roll over and retry once before giving up.
   if (response.status === 429) {
     await new Promise((resolve) => setTimeout(resolve, 20_000));
     response = await fetch(url, { headers });
   }
 
-  if (!response.ok) {
-    const body = await response.text();
-    console.error(`Google Sheets gateway request failed [${response.status}]: ${body}`);
-    if (response.status === 429) {
-      throw new SheetsRateLimitError(
-        "Your sheet is busy right now — this usually clears within a minute.",
-      );
-    }
-    throw new Error(`Google Sheets request failed [${response.status}]: ${body.slice(0, 500)}`);
-  }
-
+  if (!response.ok) handleFailure(response.status, await response.text());
   return response.json();
 }
 
-async function gatewayPost(path: string, search: URLSearchParams, body: unknown): Promise<unknown> {
-  const { lovableKey, connectionKey } = requireEnv();
+async function sheetsPost(path: string, search: URLSearchParams, body: unknown): Promise<unknown> {
+  const { base, headers } = await requestConfig();
   const query = search.toString();
-  const url = `${GATEWAY_URL}${path}${query ? `?${query}` : ""}`;
+  const url = `${base}${path}${query ? `?${query}` : ""}`;
 
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${lovableKey}`,
-      "X-Connection-Api-Key": connectionKey,
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
+    headers: { ...headers, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    console.error(`Google Sheets gateway write failed [${response.status}]: ${text}`);
-    if (response.status === 429) {
-      throw new SheetsRateLimitError(
-        "Your sheet is busy right now — this usually clears within a minute.",
-      );
-    }
-    throw new Error(`Google Sheets write failed [${response.status}]: ${text.slice(0, 500)}`);
-  }
-
+  if (!response.ok) handleFailure(response.status, await response.text());
   return response.json();
 }
 
 /** Every tab title in the spreadsheet, in sheet order. */
-export async function listTabTitles(): Promise<string[]> {
-  const { spreadsheetId } = requireEnv();
-  const payload = (await gatewayGet(
-    `/spreadsheets/${spreadsheetId}`,
+export async function listTabTitles(spreadsheetId: string): Promise<string[]> {
+  const id = requireId(spreadsheetId);
+  const payload = (await sheetsGet(
+    `/spreadsheets/${id}`,
     new URLSearchParams({ fields: "sheets.properties.title" }),
   )) as { sheets?: Array<{ properties?: { title?: string } }> };
 
@@ -124,10 +139,10 @@ export async function listTabTitles(): Promise<string[]> {
 }
 
 /** Numeric sheet id for a tab title, or null when the tab does not exist. */
-export async function getTabId(title: string): Promise<number | null> {
-  const { spreadsheetId } = requireEnv();
-  const payload = (await gatewayGet(
-    `/spreadsheets/${spreadsheetId}`,
+export async function getTabId(spreadsheetId: string, title: string): Promise<number | null> {
+  const id = requireId(spreadsheetId);
+  const payload = (await sheetsGet(
+    `/spreadsheets/${id}`,
     new URLSearchParams({ fields: "sheets.properties(title,sheetId)" }),
   )) as { sheets?: Array<{ properties?: { title?: string; sheetId?: number } }> };
 
@@ -139,11 +154,15 @@ export async function getTabId(title: string): Promise<number | null> {
  * Append one row to a tab. Returns the 1-based row number it landed on, so an
  * undo can remove exactly that row.
  */
-export async function appendRow(tab: string, values: Array<string | number>): Promise<number | null> {
-  const { spreadsheetId } = requireEnv();
+export async function appendRow(
+  spreadsheetId: string,
+  tab: string,
+  values: Array<string | number>,
+): Promise<number | null> {
+  const id = requireId(spreadsheetId);
   const range = a1(tab, "A:F");
-  const payload = (await gatewayPost(
-    `/spreadsheets/${spreadsheetId}/values/${range}:append`,
+  const payload = (await sheetsPost(
+    `/spreadsheets/${id}/values/${range}:append`,
     new URLSearchParams({
       valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
@@ -157,21 +176,20 @@ export async function appendRow(tab: string, values: Array<string | number>): Pr
 }
 
 /** Delete a single 1-based row from a tab. */
-export async function deleteRow(tab: string, rowNumber: number): Promise<void> {
-  const { spreadsheetId } = requireEnv();
-  const sheetId = await getTabId(tab);
+export async function deleteRow(
+  spreadsheetId: string,
+  tab: string,
+  rowNumber: number,
+): Promise<void> {
+  const id = requireId(spreadsheetId);
+  const sheetId = await getTabId(id, tab);
   if (sheetId === null) throw new Error(`Tab "${tab}" not found`);
 
-  await gatewayPost(`/spreadsheets/${spreadsheetId}:batchUpdate`, new URLSearchParams(), {
+  await sheetsPost(`/spreadsheets/${id}:batchUpdate`, new URLSearchParams(), {
     requests: [
       {
         deleteDimension: {
-          range: {
-            sheetId,
-            dimension: "ROWS",
-            startIndex: rowNumber - 1,
-            endIndex: rowNumber,
-          },
+          range: { sheetId, dimension: "ROWS", startIndex: rowNumber - 1, endIndex: rowNumber },
         },
       },
     ],
@@ -179,18 +197,20 @@ export async function deleteRow(tab: string, rowNumber: number): Promise<void> {
 }
 
 /** Read a single A1 range (used to confirm a row before deleting it). */
-export async function getRange(range: string): Promise<Row[]> {
-  const rows = await batchGetRanges([range]);
+export async function getRange(spreadsheetId: string, range: string): Promise<Row[]> {
+  const rows = await batchGetRanges(spreadsheetId, [range]);
   return rows.get(range) ?? [];
 }
-
 
 /**
  * Batch-read A1 ranges. Returns a map from the requested range to its rows.
  * Google caps a single batchGet, so ranges are chunked.
  */
-export async function batchGetRanges(ranges: string[]): Promise<Map<string, Row[]>> {
-  const { spreadsheetId } = requireEnv();
+export async function batchGetRanges(
+  spreadsheetId: string,
+  ranges: string[],
+): Promise<Map<string, Row[]>> {
+  const id = requireId(spreadsheetId);
   const out = new Map<string, Row[]>();
   const CHUNK = 25;
 
@@ -207,7 +227,7 @@ export async function batchGetRanges(ranges: string[]): Promise<Map<string, Row[
     });
     for (const range of chunk) search.append("ranges", range);
 
-    const payload = (await gatewayGet(`/spreadsheets/${spreadsheetId}/values:batchGet`, search)) as {
+    const payload = (await sheetsGet(`/spreadsheets/${id}/values:batchGet`, search)) as {
       valueRanges?: Array<{ values?: Row[] }>;
     };
 

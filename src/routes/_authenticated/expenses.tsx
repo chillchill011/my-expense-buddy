@@ -32,7 +32,7 @@ import type { ExpenseDataset } from "@/lib/expense-types";
 import { MONTH_SHORT, money, moneyCompact, monthLabel, userLabel } from "@/lib/format";
 import { RecentTransactions } from "@/components/TransactionList";
 
-export const Route = createFileRoute("/expenses")({
+export const Route = createFileRoute("/_authenticated/expenses")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
   head: () => ({
     meta: [

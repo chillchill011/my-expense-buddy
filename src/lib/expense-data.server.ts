@@ -35,18 +35,24 @@ const INVESTMENT_MASTER_TAB = "Investment Master";
 const LOAN_REPAYMENT_TABS = ["Loan repayment", "Loan Repayment"];
 
 // The sheet only changes when the Telegram bot writes, so 5 minutes of caching
-// is plenty and keeps us well under Google's shared per-minute read quota.
+// is plenty and keeps us well under Google's per-minute read quota. Cached per
+// spreadsheet, so one account's data can never be served to another.
 const CACHE_TTL_MS = 5 * 60_000;
-let cache: { data: ExpenseDataset; at: number } | null = null;
+const cache = new Map<string, { data: ExpenseDataset; at: number }>();
 
-export function invalidateExpenseCache(): void {
-  cache = null;
+export function invalidateExpenseCache(spreadsheetId?: string): void {
+  if (spreadsheetId) cache.delete(spreadsheetId);
+  else cache.clear();
 }
 
-export async function loadExpenseDataset(force = false): Promise<ExpenseDataset> {
-  if (!force && cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.data;
+export async function loadExpenseDataset(
+  spreadsheetId: string,
+  force = false,
+): Promise<ExpenseDataset> {
+  const hit = cache.get(spreadsheetId);
+  if (!force && hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.data;
 
-  const titles = await listTabTitles();
+  const titles = await listTabTitles(spreadsheetId);
   const monthlyTabs = titles.filter(isMonthlyTab).sort();
   const overviewTabs = titles.filter((t) => overviewTabYear(t) !== null);
   const loanTab = LOAN_REPAYMENT_TABS.find((t) => titles.includes(t));
@@ -77,7 +83,7 @@ export async function loadExpenseDataset(force = false): Promise<ExpenseDataset>
     if (r) ranges.push(r);
   }
 
-  const values = await batchGetRanges(ranges);
+  const values = await batchGetRanges(spreadsheetId, ranges);
   const rowsFor = (range: string | null): Row[] => (range ? (values.get(range) ?? []) : []);
 
   const issues: DataQualityIssue[] = [];
@@ -244,6 +250,6 @@ export async function loadExpenseDataset(force = false): Promise<ExpenseDataset>
   };
 
 
-  cache = { data, at: Date.now() };
+  cache.set(spreadsheetId, { data, at: Date.now() });
   return data;
 }

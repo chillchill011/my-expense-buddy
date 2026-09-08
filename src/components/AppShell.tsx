@@ -1,7 +1,8 @@
-import { Link } from "@tanstack/react-router";
-import { LayoutDashboard, ReceiptText, TrendingUp, Landmark } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { LayoutDashboard, ReceiptText, TrendingUp, Landmark, Settings, LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -9,7 +10,28 @@ const NAV = [
   { to: "/expenses", label: "Expenses", icon: ReceiptText },
   { to: "/investments", label: "Invest", icon: TrendingUp },
   { to: "/loans", label: "Loans", icon: Landmark },
+  { to: "/setup", label: "Sheet", icon: Settings },
 ] as const;
+
+function SignOutButton({ compact = false }: { compact?: boolean }) {
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        await supabase.auth.signOut();
+        navigate({ to: "/auth" });
+      }}
+      className={cn(
+        "flex items-center gap-2 rounded-lg text-muted-foreground transition-colors hover:text-foreground",
+        compact ? "text-xs" : "px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent",
+      )}
+    >
+      <LogOut className="size-4" />
+      <span>Sign out</span>
+    </button>
+  );
+}
 
 function NavItems({ variant }: { variant: "bottom" | "side" }) {
   return (
@@ -55,6 +77,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="flex flex-col gap-1">
           <NavItems variant="side" />
         </nav>
+        <div className="mt-auto pt-6">
+          <SignOutButton />
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -63,6 +88,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <p className="font-display text-base font-semibold tracking-tight">
             Expense<span className="text-primary">.</span>
           </p>
+          <SignOutButton compact />
         </header>
 
         <main className="min-w-0 flex-1 px-4 pb-28 pt-5 sm:px-6 lg:px-10 lg:pb-12 lg:pt-8">
