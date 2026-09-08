@@ -80,6 +80,36 @@ async function gatewayGet(path: string, search: URLSearchParams): Promise<unknow
   return response.json();
 }
 
+async function gatewayPost(path: string, search: URLSearchParams, body: unknown): Promise<unknown> {
+  const { lovableKey, connectionKey } = requireEnv();
+  const query = search.toString();
+  const url = `${GATEWAY_URL}${path}${query ? `?${query}` : ""}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${lovableKey}`,
+      "X-Connection-Api-Key": connectionKey,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error(`Google Sheets gateway write failed [${response.status}]: ${text}`);
+    if (response.status === 429) {
+      throw new SheetsRateLimitError(
+        "Your sheet is busy right now — this usually clears within a minute.",
+      );
+    }
+    throw new Error(`Google Sheets write failed [${response.status}]: ${text.slice(0, 500)}`);
+  }
+
+  return response.json();
+}
+
 /** Every tab title in the spreadsheet, in sheet order. */
 export async function listTabTitles(): Promise<string[]> {
   const { spreadsheetId } = requireEnv();
@@ -92,6 +122,68 @@ export async function listTabTitles(): Promise<string[]> {
     .map((s) => s.properties?.title)
     .filter((t): t is string => typeof t === "string" && t.length > 0);
 }
+
+/** Numeric sheet id for a tab title, or null when the tab does not exist. */
+export async function getTabId(title: string): Promise<number | null> {
+  const { spreadsheetId } = requireEnv();
+  const payload = (await gatewayGet(
+    `/spreadsheets/${spreadsheetId}`,
+    new URLSearchParams({ fields: "sheets.properties(title,sheetId)" }),
+  )) as { sheets?: Array<{ properties?: { title?: string; sheetId?: number } }> };
+
+  const found = (payload.sheets ?? []).find((s) => s.properties?.title === title);
+  return typeof found?.properties?.sheetId === "number" ? found.properties.sheetId : null;
+}
+
+/**
+ * Append one row to a tab. Returns the 1-based row number it landed on, so an
+ * undo can remove exactly that row.
+ */
+export async function appendRow(tab: string, values: Array<string | number>): Promise<number | null> {
+  const { spreadsheetId } = requireEnv();
+  const range = a1(tab, "A:F");
+  const payload = (await gatewayPost(
+    `/spreadsheets/${spreadsheetId}/values/${range}:append`,
+    new URLSearchParams({
+      valueInputOption: "USER_ENTERED",
+      insertDataOption: "INSERT_ROWS",
+    }),
+    { values: [values] },
+  )) as { updates?: { updatedRange?: string } };
+
+  const updated = payload.updates?.updatedRange ?? "";
+  const match = /![A-Z]+(\d+)/.exec(updated);
+  return match ? Number(match[1]) : null;
+}
+
+/** Delete a single 1-based row from a tab. */
+export async function deleteRow(tab: string, rowNumber: number): Promise<void> {
+  const { spreadsheetId } = requireEnv();
+  const sheetId = await getTabId(tab);
+  if (sheetId === null) throw new Error(`Tab "${tab}" not found`);
+
+  await gatewayPost(`/spreadsheets/${spreadsheetId}:batchUpdate`, new URLSearchParams(), {
+    requests: [
+      {
+        deleteDimension: {
+          range: {
+            sheetId,
+            dimension: "ROWS",
+            startIndex: rowNumber - 1,
+            endIndex: rowNumber,
+          },
+        },
+      },
+    ],
+  });
+}
+
+/** Read a single A1 range (used to confirm a row before deleting it). */
+export async function getRange(range: string): Promise<Row[]> {
+  const rows = await batchGetRanges([range]);
+  return rows.get(range) ?? [];
+}
+
 
 /**
  * Batch-read A1 ranges. Returns a map from the requested range to its rows.
