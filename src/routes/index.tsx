@@ -23,8 +23,8 @@ import {
 } from "@/lib/analytics";
 import { dashboardQueryOptions } from "@/lib/dashboard-query";
 import { yearOf } from "@/lib/expense-normalize";
-import type { Expense, ExpenseDataset } from "@/lib/expense-types";
-import { dayLabel, money, monthLabel, userLabel } from "@/lib/format";
+import type { ExpenseDataset } from "@/lib/expense-types";
+import { money, monthLabel, userLabel } from "@/lib/format";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
