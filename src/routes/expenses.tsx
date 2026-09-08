@@ -27,7 +27,7 @@ import { availableYears, byCategory, monthlySeries, sum } from "@/lib/analytics"
 import { dashboardQueryOptions } from "@/lib/dashboard-query";
 import { yearOf } from "@/lib/expense-normalize";
 import type { ExpenseDataset } from "@/lib/expense-types";
-import { fullDateLabel, money, moneyCompact, userLabel } from "@/lib/format";
+import { MONTH_SHORT, fullDateLabel, money, moneyCompact, userLabel } from "@/lib/format";
 
 export const Route = createFileRoute("/expenses")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
@@ -89,7 +89,7 @@ function Expenses({ data }: { data: ExpenseDataset }) {
         return false;
       return true;
     });
-  }, [yearExpenses, category, user, search]);
+  }, [yearExpenses, month, category, user, search]);
 
   const series = useMemo(() => monthlySeries(filtered, year), [filtered, year]);
   const total = sum(filtered);
@@ -101,9 +101,24 @@ function Expenses({ data }: { data: ExpenseDataset }) {
       .sort()
       .map((c) => ({ value: c, label: c })),
   ];
+  const labelCounts = new Map<string, number>();
+  for (const u of data.users) {
+    labelCounts.set(userLabel(u), (labelCounts.get(userLabel(u)) ?? 0) + 1);
+  }
   const userOptions = [
     { value: "all", label: "Everyone" },
-    ...data.users.map((u) => ({ value: u, label: userLabel(u) })),
+    ...data.users.map((u) => ({
+      value: u,
+      // Several sheet handles collapse to the same display name, so show the raw
+      // handle whenever the friendly label would be ambiguous.
+      label: (labelCounts.get(userLabel(u)) ?? 0) > 1 ? u : userLabel(u),
+    })),
+  ];
+
+  const monthsInYear = Array.from(new Set(yearExpenses.map((e) => e.date.slice(5, 7)))).sort();
+  const monthOptions = [
+    { value: "all", label: "All months" },
+    ...monthsInYear.map((m) => ({ value: m, label: MONTH_SHORT[Number(m) - 1] ?? m })),
   ];
 
   return (
@@ -121,8 +136,17 @@ function Expenses({ data }: { data: ExpenseDataset }) {
         <SelectField
           ariaLabel="Choose year"
           value={String(year)}
-          onChange={(v) => setYear(Number(v))}
+          onChange={(v) => {
+            setYear(Number(v));
+            setMonth("all");
+          }}
           options={years.map((y) => ({ value: String(y), label: String(y) }))}
+        />
+        <SelectField
+          ariaLabel="Filter by month"
+          value={month}
+          onChange={setMonth}
+          options={monthOptions}
         />
         <SelectField
           ariaLabel="Filter by category"
@@ -150,7 +174,15 @@ function Expenses({ data }: { data: ExpenseDataset }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label={`Total in ${year}`} value={money(total)} tone="primary" />
+        <StatCard
+          label={
+            month === "all"
+              ? `Total in ${year}`
+              : `Total in ${MONTH_SHORT[Number(month) - 1] ?? month} ${year}`
+          }
+          value={money(total)}
+          tone="primary"
+        />
         <StatCard label="Entries" value={String(filtered.length)} />
         <StatCard
           label="Busiest month"
