@@ -243,33 +243,14 @@ function Expenses({ data }: { data: ExpenseDataset }) {
 
         <Panel className="lg:col-span-3">
           <SectionHeading
-            title="Transactions"
-            description={`Showing ${Math.min(filtered.length, 60)} of ${filtered.length}`}
+            title="Recent transactions"
+            description={`Last 5 in ${monthLabel(currentMonthKey)}`}
           />
-          {filtered.length === 0 ? (
-            <EmptyState message="No transactions match these filters." />
-          ) : (
-            <div className="-mx-1 max-h-[30rem] overflow-y-auto px-1">
-              <ul className="divide-y divide-border">
-                {filtered.slice(0, 60).map((expense, i) => (
-                  <li key={i} className="flex items-center gap-3 py-2.5">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {expense.description || expense.category}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {expense.category} · {userLabel(expense.user)} ·{" "}
-                        {fullDateLabel(expense.date)}
-                      </p>
-                    </div>
-                    <span className="num shrink-0 text-sm font-semibold text-foreground">
-                      {money(expense.amount)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <RecentTransactions
+            expenses={currentMonthExpenses}
+            monthLabel={monthLabel(currentMonthKey)}
+            limit={5}
+          />
         </Panel>
       </div>
     </div>
