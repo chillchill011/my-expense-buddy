@@ -5,7 +5,7 @@ import { EMPTY_DATASET, type ExpenseDataset } from "./expense-types";
 export type DashboardResult =
   | { status: "ok"; data: ExpenseDataset }
   | { status: "setup"; code: "missing_spreadsheet_id" | "missing_credentials"; message: string }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; reason?: "rate_limited" };
 
 /**
  * Single entry point for all dashboard data. Returns a discriminated result
@@ -15,7 +15,7 @@ export type DashboardResult =
 export const getExpenseDashboard = createServerFn({ method: "GET" }).handler(
   async (): Promise<DashboardResult> => {
     const { loadExpenseDataset } = await import("./expense-data.server");
-    const { SheetsConfigError } = await import("./sheets.server");
+    const { SheetsConfigError, SheetsRateLimitError } = await import("./sheets.server");
 
     try {
       const data = await loadExpenseDataset();
@@ -23,6 +23,9 @@ export const getExpenseDashboard = createServerFn({ method: "GET" }).handler(
     } catch (error) {
       if (error instanceof SheetsConfigError) {
         return { status: "setup", code: error.code, message: error.message };
+      }
+      if (error instanceof SheetsRateLimitError) {
+        return { status: "error", reason: "rate_limited", message: error.message };
       }
       const message = error instanceof Error ? error.message : String(error);
       console.error("Failed to load expense dashboard:", message);
