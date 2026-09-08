@@ -83,7 +83,7 @@ export async function loadExpenseDataset(
     if (r) ranges.push(r);
   }
 
-  const values = await batchGetRanges(ranges);
+  const values = await batchGetRanges(spreadsheetId, ranges);
   const rowsFor = (range: string | null): Row[] => (range ? (values.get(range) ?? []) : []);
 
   const issues: DataQualityIssue[] = [];
