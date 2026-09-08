@@ -9,4 +9,5 @@
 - [x] Loans screen (payoff progress, repayment timeline, per-person)
 - [x] PWA: manifest, icon, offline shell, standalone mode
 - [x] Connect the actual spreadsheet ID
-- [ ] Later: add-entry flow, per-user login
+- [x] Quick add box (Telegram-style text entry) on Overview and Expenses
+- [ ] Later: edit/delete older entries, per-user login

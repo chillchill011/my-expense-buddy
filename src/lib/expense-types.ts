@@ -67,6 +67,8 @@ export type ExpenseDataset = {
   investmentAccounts: InvestmentAccount[];
   categories: string[];
   users: string[];
+  /** Master tab rules used to auto-categorize a typed entry. */
+  rules: CategoryRule[];
   issues: DataQualityIssue[];
   /** Epoch ms when this snapshot was read from Google Sheets. */
   fetchedAt: number;
@@ -80,6 +82,8 @@ export const EMPTY_DATASET: ExpenseDataset = {
   investmentAccounts: [],
   categories: [],
   users: [],
+  rules: [],
   issues: [],
   fetchedAt: 0,
 };
+

@@ -7,6 +7,8 @@ import { AppShell } from "@/components/AppShell";
 import { DataQualityNotice, SetupNotice } from "@/components/DashboardState";
 import { SelectField } from "@/components/Filters";
 import { EmptyState, Panel, RankedBars, SectionHeading, UserSplit } from "@/components/Panels";
+import { QuickAdd } from "@/components/QuickAdd";
+
 import { DeltaBadge, StatCard } from "@/components/StatCard";
 import {
   availableMonths,
@@ -94,6 +96,8 @@ function Overview({ data }: { data: ExpenseDataset }) {
 
   return (
     <div className="space-y-6">
+      <QuickAdd data={data} />
+
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">

@@ -22,7 +22,9 @@ import {
   RankedBars,
   SectionHeading,
 } from "@/components/Panels";
+import { QuickAdd } from "@/components/QuickAdd";
 import { StatCard } from "@/components/StatCard";
+
 import { availableYears, byCategory, monthlySeries, sum } from "@/lib/analytics";
 import { dashboardQueryOptions } from "@/lib/dashboard-query";
 import { yearOf } from "@/lib/expense-normalize";
@@ -123,6 +125,8 @@ function Expenses({ data }: { data: ExpenseDataset }) {
 
   return (
     <div className="space-y-6">
+      <QuickAdd data={data} />
+
       <header>
         <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
           Expenses
@@ -131,6 +135,7 @@ function Expenses({ data }: { data: ExpenseDataset }) {
           Every entry your bot has logged, searchable.
         </p>
       </header>
+
 
       <div className="flex flex-wrap items-center gap-2">
         <SelectField
