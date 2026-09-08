@@ -250,6 +250,6 @@ export async function loadExpenseDataset(
   };
 
 
-  cache = { data, at: Date.now() };
+  cache.set(spreadsheetId, { data, at: Date.now() });
   return data;
 }
