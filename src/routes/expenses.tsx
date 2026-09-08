@@ -174,7 +174,15 @@ function Expenses({ data }: { data: ExpenseDataset }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label={`Total in ${year}`} value={money(total)} tone="primary" />
+        <StatCard
+          label={
+            month === "all"
+              ? `Total in ${year}`
+              : `Total in ${MONTH_SHORT[Number(month) - 1] ?? month} ${year}`
+          }
+          value={money(total)}
+          tone="primary"
+        />
         <StatCard label="Entries" value={String(filtered.length)} />
         <StatCard
           label="Busiest month"
