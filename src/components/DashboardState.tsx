@@ -1,4 +1,5 @@
-import { AlertTriangle, KeyRound, TriangleAlert } from "lucide-react";
+import { useRouter } from "@tanstack/react-router";
+import { AlertTriangle, Clock, KeyRound, TriangleAlert } from "lucide-react";
 
 import type { DashboardResult } from "@/lib/expense.functions";
 import type { DataQualityIssue } from "@/lib/expense-types";
@@ -9,16 +10,41 @@ export function SetupNotice({ result }: { result: DashboardResult }) {
   if (result.status === "ok") return null;
 
   const isSetup = result.status === "setup";
+  const isBusy = result.status === "error" && result.reason === "rate_limited";
+  const router = useRouter();
 
   return (
     <div className="panel mx-auto max-w-xl p-6 text-center sm:p-8">
       <div className="mx-auto flex size-11 items-center justify-center rounded-full bg-primary/12 text-primary">
-        {isSetup ? <KeyRound className="size-5" /> : <AlertTriangle className="size-5" />}
+        {isSetup ? (
+          <KeyRound className="size-5" />
+        ) : isBusy ? (
+          <Clock className="size-5" />
+        ) : (
+          <AlertTriangle className="size-5" />
+        )}
       </div>
       <h1 className="mt-4 font-display text-lg font-semibold tracking-tight text-foreground">
-        {isSetup ? "Connect your spreadsheet" : "Couldn't load your data"}
+        {isSetup
+          ? "Connect your spreadsheet"
+          : isBusy
+            ? "Your sheet is busy right now"
+            : "Couldn't load your data"}
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">{result.message}</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {isBusy
+          ? "Google's read limit was hit momentarily — this usually clears within a minute."
+          : result.message}
+      </p>
+      {isBusy ? (
+        <button
+          type="button"
+          onClick={() => router.invalidate()}
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+        >
+          Try again
+        </button>
+      ) : null}
       {isSetup && result.code === "missing_spreadsheet_id" ? (
         <p className="mt-4 rounded-lg bg-muted/60 px-4 py-3 text-left text-xs text-muted-foreground">
           Send the link to your expense sheet in chat and it will be connected for you. Nothing in
