@@ -8,6 +8,7 @@ import { DataQualityNotice, SetupNotice } from "@/components/DashboardState";
 import { SelectField } from "@/components/Filters";
 import { EmptyState, Panel, RankedBars, SectionHeading, UserSplit } from "@/components/Panels";
 import { QuickAdd } from "@/components/QuickAdd";
+import { RecentTransactions } from "@/components/TransactionList";
 
 import { DeltaBadge, StatCard } from "@/components/StatCard";
 import {
