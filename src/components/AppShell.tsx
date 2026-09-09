@@ -16,12 +16,15 @@ const NAV = [
 
 function SignOutButton({ compact = false }: { compact?: boolean }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   return (
     <button
       type="button"
       onClick={async () => {
+        await queryClient.cancelQueries();
+        queryClient.clear();
         await supabase.auth.signOut();
-        navigate({ to: "/auth" });
+        navigate({ to: "/auth", replace: true });
       }}
       className={cn(
         "flex items-center gap-2 rounded-lg text-muted-foreground transition-colors hover:text-foreground",
