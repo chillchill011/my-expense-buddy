@@ -35,13 +35,42 @@ ever sees their own data.
 
 ### 2. Google service account
 
-1. In Google Cloud, create a project and enable **Google Sheets API**.
-2. Create a **service account** and download its JSON key.
-3. Note `client_email` and `private_key` from that file.
-4. Every user shares their spreadsheet with the `client_email` address (Editor access,
-   so quick add can write).
+Using your own service account means the Google Sheets API quota is yours alone,
+instead of being shared — which avoids `429 Quota exceeded` errors.
 
-This also means the API quota is yours alone.
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/) and create a
+   project (or open an existing one).
+2. Open **APIs & Services → Library**, search for **Google Sheets API**, and click
+   **Enable**.
+3. Open **APIs & Services → Credentials → Create credentials → Service account**.
+   Give it a name (e.g. `expense-manager`) and click **Done**.
+4. Click the new service account, open the **Keys** tab, then
+   **Add key → Create new key → JSON**. The key file downloads once — keep it safe.
+5. Open the JSON file and copy two values out of it:
+   - `client_email` → `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+     (looks like `expense-manager@your-project.iam.gserviceaccount.com`)
+   - `private_key` → `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
+     (the whole block, including the `-----BEGIN PRIVATE KEY-----` and
+     `-----END PRIVATE KEY-----` lines)
+6. Set both as environment variables (see **4. Environment** below). On Lovable
+   hosting they go in the project's secrets; on Render or another host they are
+   normal environment variables.
+7. **Share each spreadsheet with the service account.** Open the Google Sheet,
+   click **Share**, paste the `client_email` address, set it to **Editor** so quick
+   add can write rows, untick *Notify people*, and click **Share**.
+
+The app picks the service account automatically as soon as both variables are set,
+and falls back to the built-in Google connection when they are missing.
+
+**Troubleshooting**
+
+| What you see | What it means |
+| --- | --- |
+| `403 The caller does not have permission` | The sheet hasn't been shared with the service account address yet (step 7) |
+| `404` when linking a sheet | Wrong spreadsheet link, or the sheet was deleted |
+| `429 Quota exceeded` | Still running on the shared connection — check both variables are set and spelled correctly |
+| `invalid_grant` on start-up | The private key was pasted incomplete; copy the whole block including the BEGIN/END lines |
+
 
 ### 3. Database
 
