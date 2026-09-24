@@ -91,6 +91,18 @@ Copy `.env.example` to `.env` and fill in the values:
 | `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | The service account private key |
 | `VITE_TEMPLATE_SHEET_ID` | Optional. A public, view-only starter spreadsheet |
 
+The private key spans several lines. In a `.env` file, wrap it in double quotes and
+keep the literal `\n` escapes on one line:
+
+```sh
+GOOGLE_SERVICE_ACCOUNT_EMAIL="expense-manager@your-project.iam.gserviceaccount.com"
+GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEv...\n-----END PRIVATE KEY-----\n"
+```
+
+In a hosting dashboard (Render, Vercel, Lovable) paste the key exactly as it appears
+in the JSON file — the app accepts both real newlines and `\n` escapes.
+Never commit the JSON key file or `.env` to Git.
+
 ### 5. Run
 
 ```sh
