@@ -190,3 +190,131 @@ export const undoExpense = createServerFn({ method: "POST" })
       }
     },
   );
+
+export type AddInvestmentInput = {
+  amount: number;
+  /** ISO yyyy-mm-dd, never in the future. */
+  date: string;
+  category: string;
+  user: string;
+  description: string;
+};
+
+export type AddInvestmentResult =
+  | { status: "added"; tab: string; row: number | null; date: string }
+  | { status: "no_tab"; tab: string; message: string }
+  | { status: "error"; message: string };
+
+function overviewTab(year: number): string {
+  return `${year} Overview`;
+}
+
+/**
+ * Appends one investment to the "<year> Overview" tab that matches the chosen
+ * date: Date | Amount | Category | User | Description (Returns columns stay blank).
+ */
+export const addInvestment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: AddInvestmentInput) => {
+    const amount = Number(input.amount);
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error("Invalid amount");
+
+    const date = String(input.date ?? "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Invalid date");
+    const today = new Date();
+    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+      today.getDate(),
+    ).padStart(2, "0")}`;
+    if (date > iso) throw new Error("Date cannot be in the future");
+
+    const category = String(input.category ?? "").trim();
+    if (!category) throw new Error("Missing category");
+    const user = String(input.user ?? "").trim();
+    if (!user) throw new Error("Missing user");
+
+    return {
+      amount,
+      date,
+      category: category.slice(0, 120),
+      user: user.slice(0, 60),
+      description: String(input.description ?? "").trim().slice(0, 300),
+    } satisfies AddInvestmentInput;
+  })
+  .handler(async ({ data, context }): Promise<AddInvestmentResult> => {
+    const { appendRow, listTabTitles } = await import("./sheets.server");
+    const { invalidateExpenseCache } = await import("./expense-data.server");
+
+    const [y, m, d] = data.date.split("-") as [string, string, string];
+    const tab = overviewTab(Number(y));
+    const displayDate = `${d}/${m}/${y}`;
+
+    try {
+      const spreadsheetId = await spreadsheetFor(context);
+      if (!spreadsheetId) {
+        return { status: "error", message: "Link your Google Sheet before adding entries." };
+      }
+
+      const titles = await listTabTitles(spreadsheetId);
+      if (!titles.includes(tab)) {
+        return {
+          status: "no_tab",
+          tab,
+          message: `Your sheet doesn't have a "${tab}" tab yet, so there's nowhere to save this.`,
+        };
+      }
+
+      const row = await appendRow(spreadsheetId, tab, [
+        displayDate,
+        data.amount,
+        data.category,
+        data.user,
+        data.description,
+      ]);
+
+      invalidateExpenseCache(spreadsheetId);
+      return { status: "added", tab, row, date: displayDate };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to add investment:", message);
+      return { status: "error", message };
+    }
+  });
+
+/** Removes a just-added investment row, only when it still matches what we wrote. */
+export const undoInvestment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { tab: string; row: number; amount: number; category: string }) => ({
+    tab: String(input.tab),
+    row: Number(input.row),
+    amount: Number(input.amount),
+    category: String(input.category ?? ""),
+  }))
+  .handler(
+    async ({ data, context }): Promise<{ status: "removed" | "skipped"; message?: string }> => {
+      const { a1, deleteRow, getRange } = await import("./sheets.server");
+      const { invalidateExpenseCache } = await import("./expense-data.server");
+
+      try {
+        const spreadsheetId = await spreadsheetFor(context);
+        if (!spreadsheetId) return { status: "skipped", message: "No sheet is linked." };
+
+        const range = a1(data.tab, `A${data.row}:G${data.row}`);
+        const rows = await getRange(spreadsheetId, range);
+        const row = rows[0];
+        const amount = Number(String(row?.[1] ?? "").replace(/[^0-9.-]/g, ""));
+        const category = String(row?.[2] ?? "").trim();
+
+        if (!row || amount !== data.amount || category !== data.category.trim()) {
+          return { status: "skipped", message: "That entry has already changed in the sheet." };
+        }
+
+        await deleteRow(spreadsheetId, data.tab, data.row);
+        invalidateExpenseCache(spreadsheetId);
+        return { status: "removed" };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("Failed to undo investment:", message);
+        return { status: "skipped", message };
+      }
+    },
+  );
