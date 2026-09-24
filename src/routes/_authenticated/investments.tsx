@@ -14,6 +14,7 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { DataQualityNotice, SetupNotice } from "@/components/DashboardState";
 import { SelectField } from "@/components/Filters";
+import { InvestmentAdd } from "@/components/InvestmentAdd";
 import {
   ChartTooltip,
   EmptyState,
@@ -85,11 +86,17 @@ function Investments({ data }: { data: ExpenseDataset }) {
   const issues = data.issues.filter((issue) => issue.sheet.includes("Overview"));
 
   if (investments.length === 0) {
-    return <EmptyState message="No investments found in your sheet yet." />;
+    return (
+      <div className="space-y-6">
+        <InvestmentAdd data={data} />
+        <EmptyState message="No investments found in your sheet yet." />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
+      <InvestmentAdd data={data} />
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
