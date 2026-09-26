@@ -183,7 +183,7 @@ export function InvestmentAdd({ data }: { data: ExpenseDataset }) {
           ))}
         </select>
         <select
-          aria-label="Save as"
+          aria-label="Invested by"
           value={user}
           onChange={(event) => chooseUser(event.target.value)}
           className={`${fieldClass} min-w-32`}

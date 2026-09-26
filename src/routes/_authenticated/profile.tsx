@@ -13,13 +13,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
-      { title: "Your account | Expense Tracker Dashboard" },
+      { title: "Your account | Rupeeflow" },
       {
         name: "description",
         content:
           "See your sign-in details, change your password, pick light or dark mode, and check which spreadsheet is connected.",
       },
-      { property: "og:title", content: "Your account | Expense Tracker Dashboard" },
+      { property: "og:title", content: "Your account | Rupeeflow" },
       {
         property: "og:description",
         content: "Account details, password changes and appearance settings for your expense dashboard.",

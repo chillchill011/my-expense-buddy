@@ -31,13 +31,13 @@ const REQUIRED_TABS = [
 export const Route = createFileRoute("/_authenticated/setup")({
   head: () => ({
     meta: [
-      { title: "Connect your sheet | Expense Tracker Dashboard" },
+      { title: "Connect your sheet | Rupeeflow" },
       {
         name: "description",
         content:
           "Copy the starter spreadsheet, share it with the app, and paste the link to fill your expense dashboard with your own data.",
       },
-      { property: "og:title", content: "Connect your sheet | Expense Tracker Dashboard" },
+      { property: "og:title", content: "Connect your sheet | Rupeeflow" },
       {
         property: "og:description",
         content: "Link your own Google Sheet to your private expense dashboard.",

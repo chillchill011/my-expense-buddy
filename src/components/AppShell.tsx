@@ -177,9 +177,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-6 lg:flex">
         <div className="px-3 pb-8">
           <p className="font-display text-lg font-semibold tracking-tight text-foreground">
-            Expense<span className="text-primary">.</span>
+            Rupeeflow<span className="text-primary">.</span>
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">Household ledger</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Every rupee accounted for, effortlessly.</p>
         </div>
         <nav className="flex flex-col gap-1">
           <NavItems variant="side" />
@@ -200,7 +200,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3">
             <SearchLink />
             <p className="font-display text-base font-semibold tracking-tight">
-              Expense<span className="text-primary">.</span>
+              Rupeeflow<span className="text-primary">.</span>
             </p>
           </div>
           <div className="flex items-center gap-3">

@@ -29,13 +29,13 @@ export const Route = createFileRoute("/_authenticated/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
   head: () => ({
     meta: [
-      { title: "Overview | Expense Tracker Dashboard" },
+      { title: "Overview | Rupeeflow" },
       {
         name: "description",
         content:
           "Monthly household spending at a glance: totals, category breakdown, who spent what, and the latest transactions from your expense sheet.",
       },
-      { property: "og:title", content: "Overview | Expense Tracker Dashboard" },
+      { property: "og:title", content: "Overview | Rupeeflow" },
       {
         property: "og:description",
         content: "Monthly household spending at a glance, straight from your expense sheet.",
@@ -146,7 +146,7 @@ function Overview({ data }: { data: ExpenseDataset }) {
           hint={`${monthInvestments.length} contributions`}
         />
         <StatCard
-          label="Total loan paid"
+          label="Total loans paid"
           value={money(repaid)}
           icon={<ArrowDownRight className="size-4" />}
           hint={`${monthRepayments.length} payments`}

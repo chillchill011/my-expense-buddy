@@ -146,7 +146,7 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
           className="h-10 min-w-48 flex-1 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
         />
         <select
-          aria-label="Save as"
+          aria-label="Paid by"
           value={user}
           onChange={(event) => chooseUser(event.target.value)}
           className="h-10 rounded-lg border border-input bg-background px-2.5 text-xs font-medium text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
@@ -168,8 +168,8 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
       </form>
 
       <p className="mt-2 text-xs text-muted-foreground">
-        Type it just like your bot: amount first, then what it was for, and anything after a comma
-        becomes extra details.
+        Type the amount first, then what it was for. Anything after a comma
+        is saved as extra details.
       </p>
 
       {error ? <p className="mt-2 text-xs font-medium text-destructive">{error}</p> : null}
