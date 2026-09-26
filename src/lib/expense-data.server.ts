@@ -80,10 +80,18 @@ export async function loadExpenseDataset(
     ? a1(INVESTMENT_MASTER_TAB, "A2:C")
     : null;
   const loanRepaymentRange = loanTab ? a1(loanTab, "A2:E") : null;
+  const budgetRange = titles.includes(BUDGET_TAB) ? a1(BUDGET_TAB, "A2:D") : null;
 
-  for (const r of [masterRange, loanMasterRange, investmentMasterRange, loanRepaymentRange]) {
+  for (const r of [
+    masterRange,
+    loanMasterRange,
+    investmentMasterRange,
+    loanRepaymentRange,
+    budgetRange,
+  ]) {
     if (r) ranges.push(r);
   }
+
 
   const values = await batchGetRanges(spreadsheetId, ranges);
   const rowsFor = (range: string | null): Row[] => (range ? (values.get(range) ?? []) : []);
