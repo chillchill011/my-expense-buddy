@@ -361,6 +361,22 @@ export const addInvestment = createServerFn({ method: "POST" })
       ]);
 
       invalidateExpenseCache(spreadsheetId);
+
+      const { appendToSnapshot } = await import("./snapshot.server");
+      await appendToSnapshot(context.supabase, context.userId, spreadsheetId, {
+        kind: "investment",
+        row: {
+          date: data.date,
+          amount: data.amount,
+          category: data.category,
+          user: data.user,
+          description: data.description,
+          returns: null,
+          returnDate: null,
+          sheet: tab,
+        },
+      });
+
       return { status: "added", tab, row, date: displayDate, createdTab };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
