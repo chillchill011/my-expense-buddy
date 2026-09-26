@@ -25,6 +25,7 @@ import type {
   InvestmentAccount,
   LoanAccount,
   LoanRepayment,
+  MonthlyBudget,
 } from "./expense-types";
 
 const MASTER_TAB = "Master";
