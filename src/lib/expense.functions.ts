@@ -251,7 +251,7 @@ export const addInvestment = createServerFn({ method: "POST" })
     } satisfies AddInvestmentInput;
   })
   .handler(async ({ data, context }): Promise<AddInvestmentResult> => {
-    const { appendRow, listTabTitles } = await import("./sheets.server");
+    const { appendRow, ensureTab } = await import("./sheets.server");
     const { invalidateExpenseCache } = await import("./expense-data.server");
 
     const [y, m, d] = data.date.split("-") as [string, string, string];
@@ -264,14 +264,8 @@ export const addInvestment = createServerFn({ method: "POST" })
         return { status: "error", message: "Link your Google Sheet before adding entries." };
       }
 
-      const titles = await listTabTitles(spreadsheetId);
-      if (!titles.includes(tab)) {
-        return {
-          status: "no_tab",
-          tab,
-          message: `Your sheet doesn't have a "${tab}" tab yet, so there's nowhere to save this.`,
-        };
-      }
+      // The year's Overview tab is created on demand with the right headings.
+      const createdTab = await ensureTab(spreadsheetId, tab, INVESTMENT_HEADERS);
 
       const row = await appendRow(spreadsheetId, tab, [
         displayDate,
@@ -282,7 +276,7 @@ export const addInvestment = createServerFn({ method: "POST" })
       ]);
 
       invalidateExpenseCache(spreadsheetId);
-      return { status: "added", tab, row, date: displayDate };
+      return { status: "added", tab, row, date: displayDate, createdTab };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error("Failed to add investment:", message);
