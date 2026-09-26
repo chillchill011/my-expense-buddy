@@ -14,6 +14,7 @@
 - [x] Self-hosting guide in README + .env.example
 - [x] Create monthly expense tabs and yearly Overview tabs automatically (no Telegram cron)
 - [x] Database cache of the sheet + one-tap "Sync from Sheets" (auto-check after 15 min)
-- [ ] Beginner-friendly README: how the code works, backups, hosting, migration away from Lovable
+- [x] Beginner-friendly README: how the code works, backups, hosting, migration away from Lovable
+- [x] Edit budgets for any month (history pencil) + budget card on Expenses
 - [ ] Publish a public view-only template sheet and set VITE_TEMPLATE_SHEET_ID
 - [ ] Later: edit/delete older entries
