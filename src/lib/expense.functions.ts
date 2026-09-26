@@ -265,6 +265,18 @@ export const undoExpense = createServerFn({ method: "POST" })
 
         await deleteRow(spreadsheetId, data.tab, data.row);
         invalidateExpenseCache(spreadsheetId);
+
+        const { parseDate } = await import("./expense-normalize");
+        const { removeFromSnapshot } = await import("./snapshot.server");
+        const date = parseDate(row[0]);
+        if (date) {
+          await removeFromSnapshot(context.supabase, context.userId, spreadsheetId, {
+            kind: "expense",
+            date,
+            amount: data.amount,
+            description: data.description.trim(),
+          });
+        }
         return { status: "removed" };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
