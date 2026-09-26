@@ -55,7 +55,7 @@ export function InvestmentAdd({ data }: { data: ExpenseDataset }) {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(today);
   const [category, setCategory] = useState("");
-  const [user, setUser] = useState(people[0]!);
+  const [user, setUser] = useState(people[0] ?? "");
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,8 +64,9 @@ export function InvestmentAdd({ data }: { data: ExpenseDataset }) {
   useEffect(() => {
     const stored = window.localStorage.getItem(USER_STORAGE_KEY);
     if (stored && people.includes(stored)) setUser(stored);
+    else if (!user || !people.includes(user)) setUser(me || people[0] || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.users.join("|")]);
+  }, [data.users.join("|"), me]);
 
   function chooseUser(next: string) {
     setUser(next);
