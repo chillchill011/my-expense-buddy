@@ -34,13 +34,13 @@ export const Route = createFileRoute("/_authenticated/investments")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
   head: () => ({
     meta: [
-      { title: "Investments | Expense Tracker Dashboard" },
+      { title: "Investments | Rupeeflow" },
       {
         name: "description",
         content:
           "Track contributions by year and category, see risk levels from your investment master list, and compare how much each person has put in.",
       },
-      { property: "og:title", content: "Investments | Expense Tracker Dashboard" },
+      { property: "og:title", content: "Investments | Rupeeflow" },
       {
         property: "og:description",
         content: "Contributions by year and category, with risk levels and per-person totals.",

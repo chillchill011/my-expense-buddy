@@ -1,6 +1,6 @@
 {
-  "name": "Expense Tracker Dashboard",
-  "short_name": "Expense",
+  "name": "Rupeeflow — Every rupee accounted for, effortlessly",
+  "short_name": "Rupeeflow",
   "description": "Household expenses, investments and loans from your Google Sheet.",
   "start_url": "/",
   "scope": "/",

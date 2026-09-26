@@ -31,13 +31,13 @@ export const Route = createFileRoute("/_authenticated/loans")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
   head: () => ({
     meta: [
-      { title: "Loans | Expense Tracker Dashboard" },
+      { title: "Loans | Rupeeflow" },
       {
         name: "description",
         content:
           "See how much of each loan is paid off, the repayment timeline month by month, and how repayments split between people.",
       },
-      { property: "og:title", content: "Loans | Expense Tracker Dashboard" },
+      { property: "og:title", content: "Loans | Rupeeflow" },
       {
         property: "og:description",
         content: "Loan payoff progress, repayment timeline and per-person contributions.",

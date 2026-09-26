@@ -37,13 +37,13 @@ export const Route = createFileRoute("/_authenticated/expenses")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
   head: () => ({
     meta: [
-      { title: "Expenses | Expense Tracker Dashboard" },
+      { title: "Expenses | Rupeeflow" },
       {
         name: "description",
         content:
           "Search and filter every household expense by category, person and description, with a month-by-month spending trend for the year.",
       },
-      { property: "og:title", content: "Expenses | Expense Tracker Dashboard" },
+      { property: "og:title", content: "Expenses | Rupeeflow" },
       {
         property: "og:description",
         content: "Search and filter every household expense by category, person and description.",

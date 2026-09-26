@@ -146,7 +146,7 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
           className="h-10 min-w-48 flex-1 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
         />
         <select
-          aria-label="Save as"
+          aria-label="Paid by"
           value={user}
           onChange={(event) => chooseUser(event.target.value)}
           className="h-10 rounded-lg border border-input bg-background px-2.5 text-xs font-medium text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"

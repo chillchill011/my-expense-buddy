@@ -7,13 +7,13 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sign in | Expense Tracker Dashboard" },
+      { title: "Sign in | Rupeeflow" },
       {
         name: "description",
         content:
           "Sign in or create an account to link your own Google Sheet and track household spending, investments and loans.",
       },
-      { property: "og:title", content: "Sign in | Expense Tracker Dashboard" },
+      { property: "og:title", content: "Sign in | Rupeeflow" },
       {
         property: "og:description",
         content: "Sign in to your private expense dashboard, powered by your own Google Sheet.",
@@ -88,7 +88,7 @@ function AuthPage() {
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="panel w-full max-w-sm p-6 sm:p-8">
         <p className="font-display text-lg font-semibold tracking-tight text-foreground">
-          Expense<span className="text-primary">.</span>
+          Rupeeflow<span className="text-primary">.</span>
         </p>
         <h1 className="mt-4 font-display text-xl font-semibold tracking-tight text-foreground">
           {mode === "signup"

@@ -19,13 +19,13 @@ export const Route = createFileRoute("/_authenticated/search")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
   head: () => ({
     meta: [
-      { title: "Search | Expense Tracker Dashboard" },
+      { title: "Search | Rupeeflow" },
       {
         name: "description",
         content:
           "Search household entries by category, month, person or keyword and see the ten most recent matches.",
       },
-      { property: "og:title", content: "Search | Expense Tracker Dashboard" },
+      { property: "og:title", content: "Search | Rupeeflow" },
       {
         property: "og:description",
         content: "Find past entries by category, month, person or keyword.",
@@ -145,7 +145,7 @@ function SearchView({ data }: { data: ExpenseDataset }) {
               ariaLabel="Month"
             />
             <SelectField value={year} onChange={setYear} options={yearOptions} ariaLabel="Year" />
-            <SelectField value={user} onChange={setUser} options={userOptions} ariaLabel="Person" />
+            <SelectField value={user} onChange={setUser} options={userOptions} ariaLabel="Paid by" />
           </div>
         </div>
       </Panel>
