@@ -47,12 +47,13 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
   const [saved, setSaved] = useState<Saved | null>(null);
   const [pending, setPending] = useState<ParsedEntry | null>(null);
 
-  // Remember the last person used on this device until real logins arrive.
+  // Prefer the last person used on this device, else the signed-in person.
   useEffect(() => {
     const stored = window.localStorage.getItem(USER_STORAGE_KEY);
     if (stored && people.includes(stored)) setUser(stored);
+    else if (!user || !people.includes(user)) setUser(me || people[0] || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.users.join("|")]);
+  }, [data.users.join("|"), me]);
 
   function chooseUser(next: string) {
     setUser(next);
