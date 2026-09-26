@@ -88,3 +88,34 @@ export async function appendToSnapshot(
 
   await writeSnapshot(db, userId, spreadsheetId, data);
 }
+
+/** Removes an undone row from the local copy. */
+export async function removeFromSnapshot(
+  db: Db,
+  userId: string,
+  spreadsheetId: string,
+  entry:
+    | { kind: "expense"; date: string; amount: number; description: string }
+    | { kind: "investment"; date: string; amount: number; category: string },
+): Promise<void> {
+  const snapshot = await readSnapshot(db, userId, spreadsheetId);
+  if (!snapshot) return;
+
+  const data = snapshot.data;
+  if (entry.kind === "expense") {
+    const i = data.expenses.findIndex(
+      (e) =>
+        e.date === entry.date && e.amount === entry.amount && e.description === entry.description,
+    );
+    if (i === -1) return;
+    data.expenses = data.expenses.filter((_, n) => n !== i);
+  } else {
+    const i = data.investments.findIndex(
+      (e) => e.date === entry.date && e.amount === entry.amount && e.category === entry.category,
+    );
+    if (i === -1) return;
+    data.investments = data.investments.filter((_, n) => n !== i);
+  }
+
+  await writeSnapshot(db, userId, spreadsheetId, data);
+}
