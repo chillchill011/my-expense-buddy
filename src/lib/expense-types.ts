@@ -31,6 +31,17 @@ export type LoanRepayment = {
   description: string;
 };
 
+/** One row of the "Monthly Budgets" tab. */
+export type MonthlyBudget = {
+  /** "YYYY-MM" */
+  month: string;
+  amount: number;
+  notes: string;
+  /** ISO yyyy-mm-dd or "" */
+  updatedAt: string;
+};
+
+
 export type LoanAccount = {
   category: string;
   bank: string;
