@@ -36,7 +36,8 @@ export function InvestmentAdd({ data }: { data: ExpenseDataset }) {
   const save = useServerFn(addInvestment);
   const undo = useServerFn(undoInvestment);
 
-  const people = data.users.length ? data.users : ["aniketthanage", "gauri_2009"];
+  const me = useEntryName();
+  const people = peopleWithMe(data.users, me);
   const labelCounts = new Map<string, number>();
   for (const person of people) {
     labelCounts.set(userLabel(person), (labelCounts.get(userLabel(person)) ?? 0) + 1);

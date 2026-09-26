@@ -34,7 +34,8 @@ export function LoanRepaymentAdd({ data }: { data: ExpenseDataset }) {
   const save = useServerFn(addLoanRepayment);
   const undo = useServerFn(undoLoanRepayment);
 
-  const people = data.users.length ? data.users : ["aniketthanage", "gauri_2009"];
+  const me = useEntryName();
+  const people = peopleWithMe(data.users, me);
   const labelCounts = new Map<string, number>();
   for (const person of people) {
     labelCounts.set(userLabel(person), (labelCounts.get(userLabel(person)) ?? 0) + 1);
