@@ -125,6 +125,22 @@ async function sheetsPost(path: string, search: URLSearchParams, body: unknown):
   return response.json();
 }
 
+async function sheetsPut(path: string, search: URLSearchParams, body: unknown): Promise<unknown> {
+  const { base, headers } = await requestConfig();
+  const query = search.toString();
+  const url = `${base}${path}${query ? `?${query}` : ""}`;
+
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) handleFailure(response.status, await response.text());
+  return response.json();
+}
+
+
 /** Every tab title in the spreadsheet, in sheet order. */
 export async function listTabTitles(spreadsheetId: string): Promise<string[]> {
   const id = requireId(spreadsheetId);
