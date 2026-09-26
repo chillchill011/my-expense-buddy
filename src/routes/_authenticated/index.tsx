@@ -146,7 +146,7 @@ function Overview({ data }: { data: ExpenseDataset }) {
           hint={`${monthInvestments.length} contributions`}
         />
         <StatCard
-          label="Total loan paid"
+          label="Total loans paid"
           value={money(repaid)}
           icon={<ArrowDownRight className="size-4" />}
           hint={`${monthRepayments.length} payments`}

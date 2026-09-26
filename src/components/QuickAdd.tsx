@@ -168,8 +168,8 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
       </form>
 
       <p className="mt-2 text-xs text-muted-foreground">
-        Type it just like your bot: amount first, then what it was for, and anything after a comma
-        becomes extra details.
+        Type the amount first, then what it was for. Anything after a comma
+        is saved as extra details.
       </p>
 
       {error ? <p className="mt-2 text-xs font-medium text-destructive">{error}</p> : null}

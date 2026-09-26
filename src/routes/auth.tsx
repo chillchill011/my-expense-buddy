@@ -100,7 +100,7 @@ function AuthPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           {mode === "reset"
             ? "We'll email you a link to choose a new password."
-            : "Your data stays in your own Google Sheet."}
+            : "Every rupee accounted for, effortlessly. Your data stays in your own Google Sheet."}
         </p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-3">
