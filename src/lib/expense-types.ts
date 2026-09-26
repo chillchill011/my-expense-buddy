@@ -74,6 +74,9 @@ export type ExpenseDataset = {
   expenses: Expense[];
   investments: Investment[];
   loanRepayments: LoanRepayment[];
+  /** Monthly spending limits, read from the "Monthly Budgets" tab. */
+  budgets: MonthlyBudget[];
+
   loanAccounts: LoanAccount[];
   investmentAccounts: InvestmentAccount[];
   categories: string[];
