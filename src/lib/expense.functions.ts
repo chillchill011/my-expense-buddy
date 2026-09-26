@@ -200,6 +200,22 @@ export const addExpense = createServerFn({ method: "POST" })
       ]);
 
       invalidateExpenseCache(spreadsheetId);
+
+      // Keep the fast local copy in step with the sheet straight away.
+      const { appendToSnapshot } = await import("./snapshot.server");
+      await appendToSnapshot(context.supabase, context.userId, spreadsheetId, {
+        kind: "expense",
+        row: {
+          date: iso(now),
+          amount: data.amount,
+          description: data.description,
+          category: data.category,
+          user: data.user,
+          details: data.details,
+          sheet: tab,
+        },
+      });
+
       return { status: "added", tab, row, date: dmy(now), createdTab };
 
     } catch (error) {
