@@ -19,6 +19,7 @@ type Saved = {
   description: string;
   category: string;
   user: string;
+  createdTab?: boolean;
 };
 
 export function QuickAdd({ data }: { data: ExpenseDataset }) {
@@ -82,6 +83,7 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
       description: entry.description,
       category,
       user,
+      createdTab: result.createdTab === true,
     });
     setValue("");
     inputRef.current?.focus();
@@ -212,6 +214,11 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
             >
               Undo
             </button>
+          ) : null}
+          {saved.createdTab ? (
+            <span className="w-full text-muted-foreground">
+              Started a new “{saved.tab}” sheet for this month.
+            </span>
           ) : null}
         </div>
       ) : null}

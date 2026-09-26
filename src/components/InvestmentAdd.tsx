@@ -24,6 +24,7 @@ type Saved = {
   category: string;
   user: string;
   date: string;
+  createdTab?: boolean;
 };
 
 const fieldClass =
@@ -116,6 +117,7 @@ export function InvestmentAdd({ data }: { data: ExpenseDataset }) {
       category,
       user,
       date: result.date,
+      createdTab: result.createdTab === true,
     });
     setAmount("");
     setDescription("");
@@ -232,6 +234,11 @@ export function InvestmentAdd({ data }: { data: ExpenseDataset }) {
             >
               Undo
             </button>
+          ) : null}
+          {saved.createdTab ? (
+            <span className="w-full text-muted-foreground">
+              Started a new “{saved.tab}” sheet for this year.
+            </span>
           ) : null}
         </div>
       ) : null}
