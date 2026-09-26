@@ -83,6 +83,8 @@ function Loans({ data }: { data: ExpenseDataset }) {
 
   return (
     <div className="space-y-6">
+      <LoanRepaymentAdd data={data} />
+
       <header>
         <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
           Loans
@@ -91,6 +93,7 @@ function Loans({ data }: { data: ExpenseDataset }) {
           Payoff progress across {progress.length} {progress.length === 1 ? "loan" : "loans"}.
         </p>
       </header>
+
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total borrowed" value={money(principal)} />
