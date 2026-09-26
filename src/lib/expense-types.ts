@@ -92,6 +92,8 @@ export const EMPTY_DATASET: ExpenseDataset = {
   expenses: [],
   investments: [],
   loanRepayments: [],
+  budgets: [],
+
   loanAccounts: [],
   investmentAccounts: [],
   categories: [],
