@@ -151,6 +151,42 @@ export async function getTabId(spreadsheetId: string, title: string): Promise<nu
 }
 
 /**
+ * Makes sure a tab exists, creating it with the given header row when it does
+ * not. This replaces the Telegram bot's cron job that used to create each new
+ * month's tab. Returns true when a new tab was created.
+ */
+export async function ensureTab(
+  spreadsheetId: string,
+  title: string,
+  headers: string[],
+): Promise<boolean> {
+  const id = requireId(spreadsheetId);
+  const existing = await listTabTitles(id);
+  if (existing.includes(title)) return false;
+
+  try {
+    await sheetsPost(`/spreadsheets/${id}:batchUpdate`, new URLSearchParams(), {
+      requests: [{ addSheet: { properties: { title } } }],
+    });
+  } catch (error) {
+    // A parallel write may have created it a moment ago — that is fine.
+    const again = await listTabTitles(id);
+    if (!again.includes(title)) throw error;
+    return false;
+  }
+
+  const lastCol = String.fromCharCode(64 + Math.max(headers.length, 1));
+  await sheetsPut(
+    `/spreadsheets/${id}/values/${a1(title, `A1:${lastCol}1`)}`,
+    new URLSearchParams({ valueInputOption: "USER_ENTERED" }),
+    { values: [headers] },
+  );
+
+  return true;
+}
+
+
+/**
  * Append one row to a tab. Returns the 1-based row number it landed on, so an
  * undo can remove exactly that row.
  */
