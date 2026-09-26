@@ -93,9 +93,17 @@ function Overview({ data }: { data: ExpenseDataset }) {
   const repaid = sum(monthRepayments);
   const outflow = total + repaid;
 
+  // A brand-new sheet has no rows yet: still show the add box so the very
+  // first entry can be made right here.
   if (months.length === 0) {
-    return <EmptyState message="No expenses found in your sheet yet." />;
+    return (
+      <div className="space-y-6">
+        <QuickAdd data={data} />
+        <EmptyState message="Welcome to Rupeeflow. Add your first expense above to get started." />
+      </div>
+    );
   }
+
 
   return (
     <div className="space-y-6">

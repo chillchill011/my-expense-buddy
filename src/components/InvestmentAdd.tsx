@@ -216,8 +216,11 @@ export function InvestmentAdd({ data }: { data: ExpenseDataset }) {
       </form>
 
       <p className="mt-2 text-xs text-muted-foreground">
-        Saved to the overview tab for the year you pick. Future dates aren't allowed.
+        {categories.length === 0
+          ? "No investment types yet — add a few rows to the “Investment Master” tab of your sheet and they will appear here."
+          : "Saved to the overview tab for the year you pick. Future dates aren't allowed."}
       </p>
+
 
       {error ? <p className="mt-2 text-xs font-medium text-destructive">{error}</p> : null}
 

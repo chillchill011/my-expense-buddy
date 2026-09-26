@@ -201,8 +201,11 @@ export function LoanRepaymentAdd({ data }: { data: ExpenseDataset }) {
       </form>
 
       <p className="mt-2 text-xs text-muted-foreground">
-        Enter the full amount paid, interest included. Future dates aren't allowed.
+        {loans.length === 0
+          ? "No loans listed yet — add them to the “Loan Master” tab of your sheet and they will appear here."
+          : "Enter the full amount paid, interest included. Future dates aren't allowed."}
       </p>
+
 
       {error ? <p className="mt-2 text-xs font-medium text-destructive">{error}</p> : null}
 
