@@ -227,6 +227,21 @@ export async function appendRow(
   return match ? Number(match[1]) : null;
 }
 
+/** Overwrite one A1 range with the given values. */
+export async function updateRange(
+  spreadsheetId: string,
+  range: string,
+  values: Array<Array<string | number>>,
+): Promise<void> {
+  const id = requireId(spreadsheetId);
+  await sheetsPut(
+    `/spreadsheets/${id}/values/${range}`,
+    new URLSearchParams({ valueInputOption: "USER_ENTERED" }),
+    { values },
+  );
+}
+
+
 /** Delete a single 1-based row from a tab. */
 export async function deleteRow(
   spreadsheetId: string,
