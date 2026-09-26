@@ -1,22 +1,20 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowDownRight, Receipt, TrendingUp, Wallet } from "lucide-react";
+import { ArrowDownRight, Banknote, TrendingUp, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
+import { BudgetPanel } from "@/components/BudgetPanel";
 import { DataQualityNotice, SetupNotice } from "@/components/DashboardState";
 import { SelectField } from "@/components/Filters";
-import { EmptyState, Panel, RankedBars, SectionHeading, UserSplit } from "@/components/Panels";
+import { EmptyState, Panel, SectionHeading, UserSplit } from "@/components/Panels";
 import { QuickAdd } from "@/components/QuickAdd";
-import { RecentTransactions } from "@/components/TransactionList";
 
 import { DeltaBadge, StatCard } from "@/components/StatCard";
 import {
   availableMonths,
-  byCategory,
   byUser,
   inMonth,
-  inYear,
   pctChange,
   previousMonthKey,
   sum,
@@ -24,7 +22,8 @@ import {
 import { dashboardQueryOptions } from "@/lib/dashboard-query";
 import { yearOf } from "@/lib/expense-normalize";
 import type { ExpenseDataset } from "@/lib/expense-types";
-import { money, monthLabel, userLabel } from "@/lib/format";
+import { money, monthLabel } from "@/lib/format";
+
 
 export const Route = createFileRoute("/_authenticated/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
@@ -85,9 +84,14 @@ function Overview({ data }: { data: ExpenseDataset }) {
   const total = sum(monthExpenses);
   const change = pctChange(total, sum(prevExpenses));
 
-  const year = month ? Number(month.slice(0, 4)) : new Date().getFullYear();
-  const yearInvested = sum(inYear(investments, year));
-  const yearRepaid = sum(inYear(loanRepayments, year));
+  const monthInvestments = useMemo(() => inMonth(investments, month), [investments, month]);
+  const monthRepayments = useMemo(
+    () => inMonth(loanRepayments ?? [], month),
+    [loanRepayments, month],
+  );
+  const invested = sum(monthInvestments);
+  const repaid = sum(monthRepayments);
+  const outflow = total + repaid;
 
   if (months.length === 0) {
     return <EmptyState message="No expenses found in your sheet yet." />;
@@ -118,7 +122,7 @@ function Overview({ data }: { data: ExpenseDataset }) {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Spent this month"
+          label="Total spends"
           value={money(total)}
           tone="primary"
           icon={<Wallet className="size-4" />}
@@ -129,44 +133,33 @@ function Overview({ data }: { data: ExpenseDataset }) {
           }
         />
         <StatCard
-          label={`Invested in ${year}`}
-          value={money(yearInvested)}
+          label="Total outflow"
+          value={money(outflow)}
+          icon={<Banknote className="size-4" />}
+          hint="Spends plus loan repayments"
+        />
+        <StatCard
+          label="Total invested"
+          value={money(invested)}
           tone="positive"
           icon={<TrendingUp className="size-4" />}
-          hint={`${inYear(investments, year).length} contributions`}
+          hint={`${monthInvestments.length} contributions`}
         />
         <StatCard
-          label={`Loan repaid in ${year}`}
-          value={money(yearRepaid)}
+          label="Total loan paid"
+          value={money(repaid)}
           icon={<ArrowDownRight className="size-4" />}
-          hint={`${inYear(loanRepayments, year).length} payments`}
-        />
-        <StatCard
-          label="Average per entry"
-          value={money(monthExpenses.length ? total / monthExpenses.length : 0)}
-          icon={<Receipt className="size-4" />}
-          hint={`Across ${byCategory(monthExpenses).length} categories`}
+          hint={`${monthRepayments.length} payments`}
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-5">
-        <Panel className="lg:col-span-3">
-          <SectionHeading title="Where the money went" description="Top categories this month" />
-          <RankedBars buckets={byCategory(monthExpenses)} />
-        </Panel>
-        <Panel className="lg:col-span-2">
-          <SectionHeading title="Who spent it" />
-          <UserSplit buckets={byUser(monthExpenses)} />
-        </Panel>
-      </div>
+      <BudgetPanel data={data} month={month} />
 
       <Panel>
-        <SectionHeading
-          title="Latest transactions"
-          description={`Last 5 in ${monthLabel(month)}`}
-        />
-        <RecentTransactions expenses={monthExpenses} monthLabel={monthLabel(month)} limit={5} />
+        <SectionHeading title="Who spent it" description={`Split for ${monthLabel(month)}`} />
+        <UserSplit buckets={byUser(monthExpenses)} />
       </Panel>
+
 
       <p className="pb-2 text-center text-xs text-muted-foreground">
         Reading {expenses.length} expenses across {new Set(expenses.map((e) => yearOf(e.date))).size} years

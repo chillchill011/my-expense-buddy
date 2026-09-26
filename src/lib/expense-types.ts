@@ -31,6 +31,17 @@ export type LoanRepayment = {
   description: string;
 };
 
+/** One row of the "Monthly Budgets" tab. */
+export type MonthlyBudget = {
+  /** "YYYY-MM" */
+  month: string;
+  amount: number;
+  notes: string;
+  /** ISO yyyy-mm-dd or "" */
+  updatedAt: string;
+};
+
+
 export type LoanAccount = {
   category: string;
   bank: string;
@@ -63,6 +74,9 @@ export type ExpenseDataset = {
   expenses: Expense[];
   investments: Investment[];
   loanRepayments: LoanRepayment[];
+  /** Monthly spending limits, read from the "Monthly Budgets" tab. */
+  budgets: MonthlyBudget[];
+
   loanAccounts: LoanAccount[];
   investmentAccounts: InvestmentAccount[];
   categories: string[];
@@ -78,6 +92,8 @@ export const EMPTY_DATASET: ExpenseDataset = {
   expenses: [],
   investments: [],
   loanRepayments: [],
+  budgets: [],
+
   loanAccounts: [],
   investmentAccounts: [],
   categories: [],

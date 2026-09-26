@@ -25,11 +25,14 @@ import type {
   InvestmentAccount,
   LoanAccount,
   LoanRepayment,
+  MonthlyBudget,
 } from "./expense-types";
 
 const MASTER_TAB = "Master";
 const LOAN_MASTER_TAB = "Loan Master";
 const INVESTMENT_MASTER_TAB = "Investment Master";
+export const BUDGET_TAB = "Monthly Budgets";
+
 
 /** The bot has used both spellings over time. */
 const LOAN_REPAYMENT_TABS = ["Loan repayment", "Loan Repayment"];
@@ -78,10 +81,18 @@ export async function loadExpenseDataset(
     ? a1(INVESTMENT_MASTER_TAB, "A2:C")
     : null;
   const loanRepaymentRange = loanTab ? a1(loanTab, "A2:E") : null;
+  const budgetRange = titles.includes(BUDGET_TAB) ? a1(BUDGET_TAB, "A2:D") : null;
 
-  for (const r of [masterRange, loanMasterRange, investmentMasterRange, loanRepaymentRange]) {
+  for (const r of [
+    masterRange,
+    loanMasterRange,
+    investmentMasterRange,
+    loanRepaymentRange,
+    budgetRange,
+  ]) {
     if (r) ranges.push(r);
   }
+
 
   const values = await batchGetRanges(spreadsheetId, ranges);
   const rowsFor = (range: string | null): Row[] => (range ? (values.get(range) ?? []) : []);
@@ -226,6 +237,22 @@ export async function loadExpenseDataset(
     });
   }
 
+  // --- Monthly Budgets: Month (YYYY-MM) | Budget Amount | Notes | Updated ---
+  const budgetMap = new Map<string, MonthlyBudget>();
+  for (const row of rowsFor(budgetRange)) {
+    const month = text(row[0]).trim();
+    if (!/^\d{4}-\d{2}$/.test(month)) continue;
+    const amount = parseAmount(row[1]);
+    if (amount === null) continue;
+    budgetMap.set(month, {
+      month,
+      amount,
+      notes: text(row[2]),
+      updatedAt: parseDate(row[3]) ?? "",
+    });
+  }
+  const budgets = Array.from(budgetMap.values()).sort((a, b) => (a.month < b.month ? 1 : -1));
+
   const categories = Array.from(
     new Set([...rules.map((r) => r.category), ...expenses.map((e) => e.category)]),
   )
@@ -240,6 +267,8 @@ export async function loadExpenseDataset(
     expenses,
     investments,
     loanRepayments,
+    budgets,
+
     loanAccounts,
     investmentAccounts,
     categories,
