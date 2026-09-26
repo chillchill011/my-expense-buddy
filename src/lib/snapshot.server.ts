@@ -134,7 +134,8 @@ export async function removeFromSnapshot(
         user?: string;
         sheet?: string;
       }
-    | { kind: "investment"; date: string; amount: number; category: string },
+    | { kind: "investment"; date: string; amount: number; category: string }
+    | { kind: "loanRepayment"; date: string; amount: number; loan: string },
 ): Promise<void> {
   const snapshot = await readSnapshot(db, userId, spreadsheetId);
   if (!snapshot) return;
@@ -152,6 +153,13 @@ export async function removeFromSnapshot(
     );
     if (i === -1) return;
     data.expenses = data.expenses.filter((_, n) => n !== i);
+  } else if (entry.kind === "loanRepayment") {
+    const rows = data.loanRepayments ?? [];
+    const i = rows.findIndex(
+      (e) => e.date === entry.date && e.amount === entry.amount && e.loan === entry.loan,
+    );
+    if (i === -1) return;
+    data.loanRepayments = rows.filter((_, n) => n !== i);
   } else {
     const i = data.investments.findIndex(
       (e) => e.date === entry.date && e.amount === entry.amount && e.category === entry.category,
@@ -159,6 +167,7 @@ export async function removeFromSnapshot(
     if (i === -1) return;
     data.investments = data.investments.filter((_, n) => n !== i);
   }
+
 
   await writeSnapshot(db, userId, spreadsheetId, data);
 }
