@@ -164,10 +164,11 @@ export function BudgetPanel({ data, month }: { data: ExpenseDataset; month: stri
             min="0"
             step="1"
             inputMode="decimal"
-            placeholder={`Budget for ${monthLabel(month)}`}
+            placeholder={`Budget for ${monthLabel(editMonth)}`}
             aria-label="Budget amount"
             className="h-9 w-44 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
           />
+          <span className="text-xs text-muted-foreground">for {monthLabel(editMonth)}</span>
           <button
             type="submit"
             disabled={busy}
@@ -187,10 +188,7 @@ export function BudgetPanel({ data, month }: { data: ExpenseDataset; month: stri
       ) : (
         <button
           type="button"
-          onClick={() => {
-            setEditing(true);
-            setValue(selectedBudget !== null ? String(selectedBudget) : "");
-          }}
+          onClick={() => startEdit(month)}
           className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
         >
           <Pencil className="size-3.5" />
@@ -221,11 +219,21 @@ export function BudgetPanel({ data, month }: { data: ExpenseDataset; month: stri
             const monthSpend = spendByMonth.get(key) ?? 0;
             const monthLoans = loanByMonth.get(key) ?? 0;
             return (
-              <li key={key} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
+              <li key={key} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span className="text-sm text-foreground">{monthLabel(key)}</span>
-                <span className="num text-xs text-muted-foreground">
-                  {budget === null ? "No budget set" : `Budget ${money(budget)}`} · Spent{" "}
-                  {money(monthSpend)} · Out {money(monthSpend + monthLoans)}
+                <span className="flex items-center gap-2">
+                  <span className="num text-xs text-muted-foreground">
+                    {budget === null ? "No budget set" : `Budget ${money(budget)}`} · Spent{" "}
+                    {money(monthSpend)} · Out {money(monthSpend + monthLoans)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => startEdit(key)}
+                    aria-label={`Edit budget for ${monthLabel(key)}`}
+                    className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
                 </span>
               </li>
             );
