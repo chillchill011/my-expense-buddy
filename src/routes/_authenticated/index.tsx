@@ -1,22 +1,20 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowDownRight, Receipt, TrendingUp, Wallet } from "lucide-react";
+import { ArrowDownRight, Banknote, TrendingUp, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
+import { BudgetPanel } from "@/components/BudgetPanel";
 import { DataQualityNotice, SetupNotice } from "@/components/DashboardState";
 import { SelectField } from "@/components/Filters";
-import { EmptyState, Panel, RankedBars, SectionHeading, UserSplit } from "@/components/Panels";
+import { EmptyState, Panel, SectionHeading, UserSplit } from "@/components/Panels";
 import { QuickAdd } from "@/components/QuickAdd";
-import { RecentTransactions } from "@/components/TransactionList";
 
 import { DeltaBadge, StatCard } from "@/components/StatCard";
 import {
   availableMonths,
-  byCategory,
   byUser,
   inMonth,
-  inYear,
   pctChange,
   previousMonthKey,
   sum,
@@ -24,7 +22,8 @@ import {
 import { dashboardQueryOptions } from "@/lib/dashboard-query";
 import { yearOf } from "@/lib/expense-normalize";
 import type { ExpenseDataset } from "@/lib/expense-types";
-import { money, monthLabel, userLabel } from "@/lib/format";
+import { money, monthLabel } from "@/lib/format";
+
 
 export const Route = createFileRoute("/_authenticated/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
