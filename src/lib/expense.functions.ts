@@ -5,15 +5,14 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { EMPTY_DATASET, type ExpenseDataset } from "./expense-types";
 
 export type DashboardResult =
-  | { status: "ok"; data: ExpenseDataset }
+  | { status: "ok"; data: ExpenseDataset; syncedAt: number; source: "cache" | "sheets" }
   | { status: "setup"; code: "missing_spreadsheet_id" | "missing_credentials"; message: string }
   | { status: "error"; message: string; reason?: "rate_limited" | "no_access" };
 
+type Ctx = { supabase: { from: (table: any) => any }; userId: string };
+
 /** The spreadsheet linked to the signed-in account, or null when none is set. */
-async function spreadsheetFor(context: {
-  supabase: { from: (table: "user_settings") => any };
-  userId: string;
-}): Promise<string | null> {
+async function spreadsheetFor(context: Ctx): Promise<string | null> {
   const { data } = await context.supabase
     .from("user_settings")
     .select("spreadsheet_id")
@@ -22,18 +21,34 @@ async function spreadsheetFor(context: {
   return (data?.spreadsheet_id as string | null) ?? null;
 }
 
+/** Turns any Sheets failure into a result the screens can render. */
+async function toResult(error: unknown): Promise<DashboardResult> {
+  const { SheetsAccessError, SheetsConfigError, SheetsRateLimitError } = await import(
+    "./sheets.server"
+  );
+  if (error instanceof SheetsConfigError) {
+    return { status: "setup", code: error.code, message: error.message };
+  }
+  if (error instanceof SheetsRateLimitError) {
+    return { status: "error", reason: "rate_limited", message: error.message };
+  }
+  if (error instanceof SheetsAccessError) {
+    return { status: "error", reason: "no_access", message: error.message };
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  console.error("Expense data failure:", message);
+  return { status: "error", message };
+}
+
 /**
- * Single entry point for all dashboard data, scoped to the signed-in account's
- * own spreadsheet. Returns a discriminated result instead of throwing so the UI
- * can render a helpful setup screen when no sheet is linked yet.
+ * Single entry point for all dashboard data. Reads the stored local copy first
+ * so screens open instantly; only falls back to Google Sheets when no copy
+ * exists yet (first run after linking a sheet).
  */
 export const getExpenseDashboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<DashboardResult> => {
-    const { loadExpenseDataset } = await import("./expense-data.server");
-    const { SheetsAccessError, SheetsConfigError, SheetsRateLimitError } = await import(
-      "./sheets.server"
-    );
+    const { readSnapshot, writeSnapshot } = await import("./snapshot.server");
 
     try {
       const spreadsheetId = await spreadsheetFor(context);
@@ -44,21 +59,57 @@ export const getExpenseDashboard = createServerFn({ method: "GET" })
           message: "Link your Google Sheet to see your dashboard.",
         };
       }
-      const data = await loadExpenseDataset(spreadsheetId);
-      return { status: "ok", data };
+
+      const stored = await readSnapshot(context.supabase, context.userId, spreadsheetId);
+      if (stored) {
+        return {
+          status: "ok",
+          data: { ...stored.data, fetchedAt: stored.syncedAt },
+          syncedAt: stored.syncedAt,
+          source: "cache",
+        };
+      }
+
+      const { loadExpenseDataset } = await import("./expense-data.server");
+      const data = await loadExpenseDataset(spreadsheetId, true);
+      const syncedAt = await writeSnapshot(
+        context.supabase,
+        context.userId,
+        spreadsheetId,
+        data,
+      );
+      return { status: "ok", data, syncedAt, source: "sheets" };
     } catch (error) {
-      if (error instanceof SheetsConfigError) {
-        return { status: "setup", code: error.code, message: error.message };
+      return toResult(error);
+    }
+  });
+
+/**
+ * "Sync from Sheets" — one way only. Re-reads every tab from Google Sheets and
+ * refreshes the stored local copy. The spreadsheet itself is never modified.
+ */
+export const syncFromSheets = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<DashboardResult> => {
+    const { writeSnapshot } = await import("./snapshot.server");
+    const { loadExpenseDataset, invalidateExpenseCache } = await import("./expense-data.server");
+
+    try {
+      const spreadsheetId = await spreadsheetFor(context);
+      if (!spreadsheetId) {
+        return {
+          status: "setup",
+          code: "missing_spreadsheet_id",
+          message: "Link your Google Sheet to see your dashboard.",
+        };
       }
-      if (error instanceof SheetsRateLimitError) {
-        return { status: "error", reason: "rate_limited", message: error.message };
-      }
-      if (error instanceof SheetsAccessError) {
-        return { status: "error", reason: "no_access", message: error.message };
-      }
-      const message = error instanceof Error ? error.message : String(error);
-      console.error("Failed to load expense dashboard:", message);
-      return { status: "error", message };
+
+      invalidateExpenseCache(spreadsheetId);
+      const data = await loadExpenseDataset(spreadsheetId, true);
+      const syncedAt = await writeSnapshot(context.supabase, context.userId, spreadsheetId, data);
+      return { status: "ok", data, syncedAt, source: "sheets" };
+    } catch (error) {
+      return toResult(error);
     }
   });
 
