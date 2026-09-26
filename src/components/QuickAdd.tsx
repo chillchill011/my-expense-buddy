@@ -39,7 +39,7 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
   }
   const personLabel = (person: string) =>
     (labelCounts.get(userLabel(person)) ?? 0) > 1 ? person : userLabel(person);
-  const [user, setUser] = useState(people[0]!);
+  const [user, setUser] = useState(people[0] ?? "");
 
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
