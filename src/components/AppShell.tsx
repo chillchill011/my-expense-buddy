@@ -14,7 +14,30 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { SyncButton } from "@/components/SyncButton";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+
+/** One-tap light/dark switch; the full three-way choice lives on the account page. */
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+    >
+      {isDark ? <Sun className="size-4.5" /> : <Moon className="size-4.5" />}
+    </button>
+  );
+}
+
 
 /** Primary screens — these fill the phone's bottom bar and the sidebar. */
 const NAV = [
