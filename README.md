@@ -183,7 +183,15 @@ a specific adapter, check its TanStack Start guide.
 - Google Sheets API allows plenty of requests for two people.
 - Free plans can change. Because the sheet is master, you can always move again.
 
-## 8. Everyday tips
+## 8. Your account page
+
+Top-right menu -> **Your account** shows the email you signed in with, when the account
+was created, and which spreadsheet is connected. From there you can also change your
+password, choose **Light / Dark / System** appearance, and set the name that is picked
+by default when you add an entry. The sun/moon button in the header is a quick
+light-dark switch.
+
+## 9. Everyday tips
 
 - Added rows by hand in the sheet? Press **Sync**.
 - Numbers look wrong? Press **Sync**, then check the sheet for typos in dates or amounts.
@@ -191,7 +199,7 @@ a specific adapter, check its TanStack Start guide.
   pencil next to a month in **Budget history**.
 - Loan repayment amounts include interest; they count towards **Total outflow**.
 
-## 9. Google service account (one-time setup)
+## 10. Google service account (one-time setup)
 
 1. Go to https://console.cloud.google.com and create a project.
 2. **APIs & Services → Library** → search **Google Sheets API** → **Enable**.
