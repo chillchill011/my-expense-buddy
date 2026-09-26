@@ -198,11 +198,30 @@ function SetupPage() {
           </li>
 
           <li>
-            <p className="font-medium text-foreground">3. Paste the link</p>
+            <p className="font-medium text-foreground">3. Your name on entries</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              This name is saved with everything you add, so everyone at home can tell entries
+              apart.
+            </p>
+            <input
+              value={person}
+              onChange={(e) => setPerson(e.target.value)}
+              placeholder="e.g. aniket"
+              maxLength={60}
+              className="mt-2 w-full rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+            />
+          </li>
+
+          <li>
+            <p className="font-medium text-foreground">4. Paste the link</p>
             <form
               className="mt-2 flex flex-wrap gap-2"
               onSubmit={(e) => {
                 e.preventDefault();
+                if (!person.trim()) {
+                  setResult({ status: "error", message: "Add your name first." });
+                  return;
+                }
                 setResult(null);
                 save.mutate(value);
               }}
@@ -215,7 +234,7 @@ function SetupPage() {
               />
               <button
                 type="submit"
-                disabled={save.isPending || !value.trim()}
+                disabled={save.isPending || !value.trim() || !person.trim()}
                 className="rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
               >
                 {save.isPending ? "Checking…" : "Connect"}
