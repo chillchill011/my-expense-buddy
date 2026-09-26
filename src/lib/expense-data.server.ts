@@ -236,6 +236,22 @@ export async function loadExpenseDataset(
     });
   }
 
+  // --- Monthly Budgets: Month (YYYY-MM) | Budget Amount | Notes | Updated ---
+  const budgetMap = new Map<string, MonthlyBudget>();
+  for (const row of rowsFor(budgetRange)) {
+    const month = text(row[0]).trim();
+    if (!/^\d{4}-\d{2}$/.test(month)) continue;
+    const amount = parseAmount(row[1]);
+    if (amount === null) continue;
+    budgetMap.set(month, {
+      month,
+      amount,
+      notes: text(row[2]),
+      updatedAt: parseDate(row[3]) ?? "",
+    });
+  }
+  const budgets = Array.from(budgetMap.values()).sort((a, b) => (a.month < b.month ? 1 : -1));
+
   const categories = Array.from(
     new Set([...rules.map((r) => r.category), ...expenses.map((e) => e.category)]),
   )
@@ -250,6 +266,8 @@ export async function loadExpenseDataset(
     expenses,
     investments,
     loanRepayments,
+    budgets,
+
     loanAccounts,
     investmentAccounts,
     categories,
