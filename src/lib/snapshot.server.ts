@@ -6,7 +6,13 @@
  * Google on every page load. Nothing in this file ever writes to the sheet.
  */
 
-import type { Expense, ExpenseDataset, Investment } from "./expense-types";
+import type {
+  Expense,
+  ExpenseDataset,
+  Investment,
+  LoanRepayment,
+  MonthlyBudget,
+} from "./expense-types";
 
 /** Loose shape of the authenticated Supabase client handed to server functions. */
 export type Db = { from: (table: string) => any };
