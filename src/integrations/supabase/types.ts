@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      sheet_snapshots: {
+        Row: {
+          created_at: string
+          dataset: Json
+          expense_count: number
+          investment_count: number
+          spreadsheet_id: string
+          synced_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dataset: Json
+          expense_count?: number
+          investment_count?: number
+          spreadsheet_id: string
+          synced_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dataset?: Json
+          expense_count?: number
+          investment_count?: number
+          spreadsheet_id?: string
+          synced_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           created_at: string
