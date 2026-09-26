@@ -30,6 +30,8 @@ import type {
 const MASTER_TAB = "Master";
 const LOAN_MASTER_TAB = "Loan Master";
 const INVESTMENT_MASTER_TAB = "Investment Master";
+export const BUDGET_TAB = "Monthly Budgets";
+
 
 /** The bot has used both spellings over time. */
 const LOAN_REPAYMENT_TABS = ["Loan repayment", "Loan Repayment"];
