@@ -13,6 +13,7 @@
 - [x] Service-account Google access so the app can be self-hosted
 - [x] Self-hosting guide in README + .env.example
 - [x] Create monthly expense tabs and yearly Overview tabs automatically (no Telegram cron)
-- [ ] Database cache of the sheet + one-tap "Sync from Sheets"
+- [x] Database cache of the sheet + one-tap "Sync from Sheets" (auto-check after 15 min)
+- [ ] Beginner-friendly README: how the code works, backups, hosting, migration away from Lovable
 - [ ] Publish a public view-only template sheet and set VITE_TEMPLATE_SHEET_ID
 - [ ] Later: edit/delete older entries
