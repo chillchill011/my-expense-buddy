@@ -9,12 +9,37 @@ import {
   Settings,
   LogOut,
   UserRound,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { SyncButton } from "@/components/SyncButton";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+
+/** One-tap light/dark switch; the full three-way choice lives on the account page. */
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+    >
+      {isDark ? <Sun className="size-4.5" /> : <Moon className="size-4.5" />}
+    </button>
+  );
+}
+
 
 /** Primary screens — these fill the phone's bottom bar and the sidebar. */
 const NAV = [
@@ -66,7 +91,15 @@ function AccountMenu() {
       </button>
 
       {open ? (
-        <div className="panel-raised absolute right-0 top-11 z-50 w-48 overflow-hidden rounded-xl border border-border bg-card p-1 shadow-lg">
+        <div className="panel-raised absolute right-0 top-11 z-50 w-52 overflow-hidden rounded-xl border border-border bg-card p-1 shadow-lg">
+          <Link
+            to="/profile"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-muted"
+          >
+            <UserRound className="size-4 text-muted-foreground" />
+            <span>Your account</span>
+          </Link>
           <Link
             to="/setup"
             onClick={() => setOpen(false)}
@@ -75,6 +108,7 @@ function AccountMenu() {
             <Settings className="size-4 text-muted-foreground" />
             <span>Sheet settings</span>
           </Link>
+
           <button
             type="button"
             onClick={() => {
@@ -154,6 +188,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <SyncButton compact />
           <div className="flex items-center gap-2">
             <SearchLink />
+            <ThemeToggle />
             <AccountMenu />
           </div>
         </div>
@@ -170,6 +205,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-3">
             <SyncButton compact />
+            <ThemeToggle />
             <AccountMenu />
           </div>
         </header>

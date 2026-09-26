@@ -201,3 +201,73 @@
 @utility rise {
   animation: rise 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/*
+ * Light theme. The <html> element gets .light or .dark from the theme picker;
+ * the dark values above stay the default so nothing flashes before hydration.
+ */
+.light {
+  --background: oklch(0.985 0.004 258);
+  --foreground: oklch(0.24 0.014 258);
+
+  --surface: oklch(1 0 0);
+  --surface-raised: oklch(1 0 0);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.014 258);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.014 258);
+
+  --primary: oklch(0.62 0.13 72);
+  --primary-foreground: oklch(0.99 0.004 82);
+
+  --secondary: oklch(0.95 0.006 258);
+  --secondary-foreground: oklch(0.28 0.014 258);
+
+  --muted: oklch(0.95 0.006 258);
+  --muted-foreground: oklch(0.5 0.014 258);
+
+  --accent: oklch(0.58 0.1 195);
+  --accent-foreground: oklch(0.99 0.004 195);
+
+  --destructive: oklch(0.55 0.19 22);
+  --destructive-foreground: oklch(0.99 0.004 22);
+
+  --positive: oklch(0.55 0.13 162);
+  --positive-foreground: oklch(0.99 0.004 162);
+
+  --warning: oklch(0.65 0.14 62);
+  --warning-foreground: oklch(0.99 0.004 62);
+
+  --border: oklch(0.9 0.006 258);
+  --input: oklch(0.9 0.006 258);
+  --ring: oklch(0.62 0.13 72);
+
+  --chart-1: oklch(0.62 0.13 72);
+  --chart-2: oklch(0.58 0.1 195);
+  --chart-3: oklch(0.55 0.13 162);
+  --chart-4: oklch(0.58 0.16 22);
+  --chart-5: oklch(0.58 0.13 300);
+  --chart-6: oklch(0.6 0.13 130);
+  --chart-7: oklch(0.55 0.12 250);
+  --chart-8: oklch(0.62 0.11 40);
+
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.28 0.014 258);
+  --sidebar-primary: oklch(0.62 0.13 72);
+  --sidebar-primary-foreground: oklch(0.99 0.004 82);
+  --sidebar-accent: oklch(0.95 0.006 258);
+  --sidebar-accent-foreground: oklch(0.24 0.014 258);
+  --sidebar-border: oklch(0.9 0.006 258);
+  --sidebar-ring: oklch(0.62 0.13 72);
+
+  --shadow-card: 0 1px 2px 0 oklch(0 0 0 / 6%), 0 8px 24px -16px oklch(0 0 0 / 18%);
+  --shadow-raised: 0 1px 2px 0 oklch(0 0 0 / 8%), 0 16px 40px -20px oklch(0 0 0 / 22%);
+}
+
+.light .grid-fade {
+  background-image:
+    linear-gradient(to right, oklch(0 0 0 / 5%) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(0 0 0 / 5%) 1px, transparent 1px);
+}

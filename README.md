@@ -39,7 +39,26 @@ a reference.
 - **New tabs**: if a monthly tab (`2026-10`) or yearly tab (`2027 Overview`) is missing
   when you add an entry, the app creates it. No Telegram bot or cron job is needed.
 
-## 2. What is in the spreadsheet
+## 2. Starter spreadsheet template
+
+If you are setting this up for the first time (or for someone else), start from the
+ready-made template:
+
+**https://docs.google.com/spreadsheets/d/1H3qoj5mNiFcI-HGEDbHkCAbiRXkBz_EenXFVI3AQLVo/edit?usp=sharing**
+
+1. Open the link (view-only) and choose **File -> Make a copy**. The copy lands in your
+   own Google Drive and belongs to you.
+2. Share your copy with the app's Google service account address as an **Editor**
+   (the address is shown on the app's *Sheet settings* page).
+3. In the app, open the account menu (top-right) -> **Sheet settings**, paste the link
+   to *your copy*, and press **Connect**.
+
+The template already contains the tabs listed below. Monthly tabs (`2026-10`) and yearly
+investment tabs (`2027 Overview`) are created automatically by the app when needed, but
+`Master`, `Investment Master` and `Loan Master` must exist, so always start from a copy
+of this template rather than a blank sheet.
+
+## 3. What is in the spreadsheet
 
 | Tab | Columns |
 | --- | --- |
@@ -54,7 +73,7 @@ a reference.
 Dates are written as `DD/MM/YYYY`. You can still edit the sheet by hand — just press
 **Sync** in the app afterwards.
 
-## 3. What the code folders mean
+## 4. What the code folders mean
 
 | Folder / file | What it does |
 | --- | --- |
@@ -71,7 +90,7 @@ Dates are written as `DD/MM/YYYY`. You can still edit the sheet by hand — just
 Built with React + TanStack Start (web framework), Tailwind (styling), and a
 PostgreSQL database with logins (Supabase-compatible).
 
-## 4. Backups (do this regularly)
+## 5. Backups (do this regularly)
 
 Your real data lives in Google Sheets, so backing up the sheet is the most important.
 
@@ -85,13 +104,13 @@ Your real data lives in Google Sheets, so backing up the sheet is the most impor
 4. **Secrets** — save your Google service account JSON key file in a password manager.
    Never put it on GitHub.
 
-## 5. Hosting today (Lovable)
+## 6. Hosting today (Lovable)
 
 The app runs on Lovable hosting with Lovable Cloud as the database. Secrets
 (`GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`) are stored in the
 project's secrets. Nothing else is needed.
 
-## 6. Moving away from Lovable (step by step)
+## 7. Moving away from Lovable (step by step)
 
 You need three free things: **code hosting** (GitHub), a **database** (Supabase free
 tier), and **app hosting** (Vercel, Netlify or Cloudflare — all have free plans).
@@ -164,7 +183,15 @@ a specific adapter, check its TanStack Start guide.
 - Google Sheets API allows plenty of requests for two people.
 - Free plans can change. Because the sheet is master, you can always move again.
 
-## 7. Everyday tips
+## 8. Your account page
+
+Top-right menu -> **Your account** shows the email you signed in with, when the account
+was created, and which spreadsheet is connected. From there you can also change your
+password, choose **Light / Dark / System** appearance, and set the name that is picked
+by default when you add an entry. The sun/moon button in the header is a quick
+light-dark switch.
+
+## 9. Everyday tips
 
 - Added rows by hand in the sheet? Press **Sync**.
 - Numbers look wrong? Press **Sync**, then check the sheet for typos in dates or amounts.
@@ -172,7 +199,7 @@ a specific adapter, check its TanStack Start guide.
   pencil next to a month in **Budget history**.
 - Loan repayment amounts include interest; they count towards **Total outflow**.
 
-## 8. Google service account (one-time setup)
+## 10. Google service account (one-time setup)
 
 1. Go to https://console.cloud.google.com and create a project.
 2. **APIs & Services → Library** → search **Google Sheets API** → **Enable**.
