@@ -7,6 +7,7 @@ import { dashboardQueryOptions } from "@/lib/dashboard-query";
 import { addInvestment, undoInvestment } from "@/lib/expense.functions";
 import type { ExpenseDataset } from "@/lib/expense-types";
 import { money, userLabel } from "@/lib/format";
+import { peopleWithMe, useEntryName } from "@/lib/use-entry-name";
 
 const USER_STORAGE_KEY = "expense-quick-add-user";
 
