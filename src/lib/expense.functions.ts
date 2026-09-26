@@ -154,6 +154,12 @@ function dmy(now: Date): string {
   return `${d}/${m}/${now.getFullYear()}`;
 }
 
+function iso(now: Date): string {
+  const d = String(now.getDate()).padStart(2, "0");
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  return `${now.getFullYear()}-${m}-${d}`;
+}
+
 /**
  * Appends one expense to the current month's tab, exactly the way the Telegram
  * bot does: Date | Amount | Description | Category | User | Details.
