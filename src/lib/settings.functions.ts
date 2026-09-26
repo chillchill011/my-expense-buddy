@@ -126,3 +126,17 @@ export const saveQuickAddUser = createServerFn({ method: "POST" })
       );
     return { ok: true };
   });
+
+export const saveDefaultPerson = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { person: string }) => ({
+    person: String(input.person ?? "").trim().slice(0, 60),
+  }))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("user_settings").upsert(
+      { user_id: context.userId, default_person: data.person || null },
+      { onConflict: "user_id" },
+    );
+    if (error) throw error;
+    return { ok: true };
+  });
