@@ -80,9 +80,18 @@ export function BudgetPanel({ data, month }: { data: ExpenseDataset; month: stri
   const pct = selectedBudget && selectedBudget > 0 ? (spent / selectedBudget) * 100 : 0;
 
   const [editing, setEditing] = useState(false);
+  const [editMonth, setEditMonth] = useState(month);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function startEdit(key: string) {
+    setEditMonth(key);
+    setEditing(true);
+    setError(null);
+    const b = budgetOf(key);
+    setValue(b !== null ? String(b) : "");
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -93,7 +102,7 @@ export function BudgetPanel({ data, month }: { data: ExpenseDataset; month: stri
     }
     setBusy(true);
     setError(null);
-    const result = await save({ data: { month, amount, notes: "" } }).catch((err: unknown) => ({
+    const result = await save({ data: { month: editMonth, amount, notes: "" } }).catch((err: unknown) => ({
       status: "error" as const,
       message: err instanceof Error ? err.message : String(err),
     }));
