@@ -1,7 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowDownRight, Banknote, TrendingUp, Wallet } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 
 import { AppShell } from "@/components/AppShell";
 import { BudgetPanel } from "@/components/BudgetPanel";
@@ -49,6 +50,13 @@ export const Route = createFileRoute("/_authenticated/")({
 
 function OverviewPage() {
   const { data: result } = useSuspenseQuery(dashboardQueryOptions);
+  const navigate = useNavigate();
+
+  // First-time users have no sheet yet — take them straight to the setup page.
+  const needsSetup = result.status === "setup" && result.code === "missing_spreadsheet_id";
+  useEffect(() => {
+    if (needsSetup) void navigate({ to: "/setup" });
+  }, [needsSetup, navigate]);
 
   if (result.status !== "ok") {
     return (
@@ -57,6 +65,7 @@ function OverviewPage() {
       </AppShell>
     );
   }
+
 
   return (
     <AppShell>

@@ -31,6 +31,9 @@ export function SyncButton({ compact = false }: { compact?: boolean }) {
 
   const cached = queryClient.getQueryData<DashboardResult>(dashboardQueryOptions.queryKey);
   const syncedAt = cached && cached.status === "ok" ? cached.syncedAt : null;
+  // Nothing to sync until a sheet is connected.
+  const noSheet = cached?.status === "setup";
+
 
   // Keep the "x minutes ago" label honest while the app stays open.
   useEffect(() => {
