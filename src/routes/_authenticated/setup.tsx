@@ -62,10 +62,26 @@ function SetupPage() {
   });
 
   const [value, setValue] = useState("");
+  const [person, setPerson] = useState("");
   const [result, setResult] = useState<LinkSheetResult | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      setPerson((current) => current || nameFromEmail(data.session?.user.email));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (settings.data?.defaultPerson) setPerson(settings.data.defaultPerson);
+  }, [settings.data?.defaultPerson]);
+
   const save = useMutation({
-    mutationFn: (input: string) => link({ data: { link: input } }),
+    mutationFn: (input: string) => link({ data: { link: input, defaultPerson: person.trim() } }),
     onSuccess: async (res) => {
       setResult(res);
       if (res.status === "linked") {
