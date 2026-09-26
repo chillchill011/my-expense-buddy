@@ -286,6 +286,100 @@ export const undoExpense = createServerFn({ method: "POST" })
     },
   );
 
+export type DeleteExpenseInput = {
+  /** Source tab, e.g. "2024-05". */
+  sheet: string;
+  /** ISO yyyy-mm-dd as shown in the app. */
+  date: string;
+  amount: number;
+  description: string;
+  category: string;
+  user: string;
+  details: string;
+};
+
+export type DeleteExpenseResult =
+  | { status: "deleted" }
+  | { status: "not_found"; message: string }
+  | { status: "error"; message: string };
+
+/**
+ * Deletes one saved expense, however old it is.
+ *
+ * The row is located by matching every field (date, amount, description,
+ * category, person, details) inside its own monthly tab, so a row that has
+ * been edited in the spreadsheet since the screen was loaded is never removed
+ * by mistake. Google Sheets removes the whole row and pulls the rows below it
+ * up, so no blank gap is left behind.
+ */
+export const deleteExpenseEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: DeleteExpenseInput) => ({
+    sheet: String(input.sheet ?? "").trim(),
+    date: String(input.date ?? "").trim(),
+    amount: Number(input.amount),
+    description: String(input.description ?? "").trim(),
+    category: String(input.category ?? "").trim(),
+    user: String(input.user ?? "").trim(),
+    details: String(input.details ?? "").trim(),
+  }))
+  .handler(async ({ data, context }): Promise<DeleteExpenseResult> => {
+    const { a1, deleteRow, getRange } = await import("./sheets.server");
+    const { invalidateExpenseCache } = await import("./expense-data.server");
+    const { normalizeLabel, parseAmount, parseDate, text } = await import("./expense-normalize");
+    const { removeFromSnapshot } = await import("./snapshot.server");
+
+    try {
+      if (!data.sheet || !data.date || !Number.isFinite(data.amount)) {
+        return { status: "error", message: "That entry can't be identified." };
+      }
+
+      const spreadsheetId = await spreadsheetFor(context);
+      if (!spreadsheetId) {
+        return { status: "error", message: "Link your Google Sheet before deleting entries." };
+      }
+
+      const rows = await getRange(spreadsheetId, a1(data.sheet, "A2:F"));
+
+      // Row 1 is the heading row, so sheet row number = index + 2.
+      const index = rows.findIndex((row) => {
+        if (parseDate(row[0]) !== data.date) return false;
+        if (parseAmount(row[1]) !== data.amount) return false;
+        if (text(row[2]) !== data.description) return false;
+        if ((normalizeLabel(row[3]) || "Uncategorized") !== data.category) return false;
+        if ((text(row[4]) || "unknown") !== data.user) return false;
+        return text(row[5]) === data.details;
+      });
+
+      if (index === -1) {
+        return {
+          status: "not_found",
+          message: "That entry is no longer in your sheet — tap Sync to refresh.",
+        };
+      }
+
+      await deleteRow(spreadsheetId, data.sheet, index + 2);
+      invalidateExpenseCache(spreadsheetId);
+
+      await removeFromSnapshot(context.supabase, context.userId, spreadsheetId, {
+        kind: "expense",
+        date: data.date,
+        amount: data.amount,
+        description: data.description,
+        category: data.category,
+        user: data.user,
+        sheet: data.sheet,
+      });
+
+      return { status: "deleted" };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to delete expense:", message);
+      return { status: "error", message };
+    }
+  });
+
+
 export type AddInvestmentInput = {
   amount: number;
   /** ISO yyyy-mm-dd, never in the future. */
