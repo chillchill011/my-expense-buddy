@@ -90,7 +90,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="flex flex-col gap-1">
           <NavItems variant="side" />
         </nav>
-        <div className="mt-auto pt-6">
+        <div className="mt-auto flex flex-col gap-1 pt-6">
+          <SyncButton />
           <SignOutButton />
         </div>
       </aside>
