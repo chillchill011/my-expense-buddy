@@ -200,6 +200,33 @@ function Loans({ data }: { data: ExpenseDataset }) {
           <UserSplit buckets={byUser(loanRepayments)} />
         </Panel>
       </div>
+
+      <Panel>
+        <SectionHeading title="Recent repayments" description="Last 10 payments recorded" />
+        {loanRepayments.length === 0 ? (
+          <EmptyState message="No repayments recorded yet." />
+        ) : (
+          <ul className="divide-y divide-border">
+            {loanRepayments.slice(0, 10).map((r, index) => (
+              <li
+                key={`${r.date}-${r.amount}-${r.loan}-${index}`}
+                className="flex flex-wrap items-baseline justify-between gap-2 py-2"
+              >
+                <span className="text-sm text-foreground">
+                  {r.loan}
+                  {r.description ? (
+                    <span className="text-muted-foreground"> · {r.description}</span>
+                  ) : null}
+                </span>
+                <span className="num text-xs text-muted-foreground">
+                  {money(r.amount)} · {fullDateLabel(r.date)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
     </div>
+
   );
 }
