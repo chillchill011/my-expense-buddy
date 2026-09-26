@@ -123,7 +123,7 @@ export const addExpense = createServerFn({ method: "POST" })
     } satisfies AddExpenseInput;
   })
   .handler(async ({ data, context }): Promise<AddExpenseResult> => {
-    const { appendRow, listTabTitles } = await import("./sheets.server");
+    const { appendRow, ensureTab } = await import("./sheets.server");
     const { invalidateExpenseCache } = await import("./expense-data.server");
 
     const now = new Date();
@@ -135,14 +135,9 @@ export const addExpense = createServerFn({ method: "POST" })
         return { status: "error", message: "Link your Google Sheet before adding entries." };
       }
 
-      const titles = await listTabTitles(spreadsheetId);
-      if (!titles.includes(tab)) {
-        return {
-          status: "no_tab",
-          tab,
-          message: `The ${tab} tab hasn't been created in your sheet yet, so there's nowhere to save this.`,
-        };
-      }
+      // The month's tab is created on demand, so nothing external has to
+      // prepare next month's sheet in advance.
+      const createdTab = await ensureTab(spreadsheetId, tab, EXPENSE_HEADERS);
 
       const row = await appendRow(spreadsheetId, tab, [
         dmy(now),
@@ -154,7 +149,8 @@ export const addExpense = createServerFn({ method: "POST" })
       ]);
 
       invalidateExpenseCache(spreadsheetId);
-      return { status: "added", tab, row, date: dmy(now) };
+      return { status: "added", tab, row, date: dmy(now), createdTab };
+
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error("Failed to add expense:", message);
