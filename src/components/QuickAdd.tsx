@@ -8,6 +8,7 @@ import { addExpense, undoExpense } from "@/lib/expense.functions";
 import { matchCategory, parseEntry, type ParsedEntry } from "@/lib/expense-parse";
 import type { ExpenseDataset } from "@/lib/expense-types";
 import { money, userLabel } from "@/lib/format";
+import { peopleWithMe, useEntryName } from "@/lib/use-entry-name";
 import { cn } from "@/lib/utils";
 
 const USER_STORAGE_KEY = "expense-quick-add-user";
@@ -28,7 +29,8 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
   const undo = useServerFn(undoExpense);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const people = data.users.length ? data.users : ["aniketthanage", "gauri_2009"];
+  const me = useEntryName();
+  const people = peopleWithMe(data.users, me);
   // Several sheet handles collapse to the same friendly name, so show the raw
   // handle whenever the label alone would be ambiguous.
   const labelCounts = new Map<string, number>();
@@ -37,7 +39,7 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
   }
   const personLabel = (person: string) =>
     (labelCounts.get(userLabel(person)) ?? 0) > 1 ? person : userLabel(person);
-  const [user, setUser] = useState(people[0]!);
+  const [user, setUser] = useState(people[0] ?? "");
 
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
@@ -45,12 +47,13 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
   const [saved, setSaved] = useState<Saved | null>(null);
   const [pending, setPending] = useState<ParsedEntry | null>(null);
 
-  // Remember the last person used on this device until real logins arrive.
+  // Prefer the last person used on this device, else the signed-in person.
   useEffect(() => {
     const stored = window.localStorage.getItem(USER_STORAGE_KEY);
     if (stored && people.includes(stored)) setUser(stored);
+    else if (!user || !people.includes(user)) setUser(me || people[0] || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.users.join("|")]);
+  }, [data.users.join("|"), me]);
 
   function chooseUser(next: string) {
     setUser(next);

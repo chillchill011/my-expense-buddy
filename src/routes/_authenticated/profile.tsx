@@ -191,7 +191,7 @@ function ProfilePage() {
             <input
               value={person}
               onChange={(e) => setPerson(e.target.value)}
-              placeholder="e.g. aniketthanage"
+              placeholder="e.g. your first name"
               className={cn(inputClass, "min-w-0 flex-1")}
             />
             <button
