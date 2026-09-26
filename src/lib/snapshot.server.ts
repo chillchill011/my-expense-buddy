@@ -95,7 +95,16 @@ export async function removeFromSnapshot(
   userId: string,
   spreadsheetId: string,
   entry:
-    | { kind: "expense"; date: string; amount: number; description: string }
+    | {
+        kind: "expense";
+        date: string;
+        amount: number;
+        description: string;
+        /** Optional extra fields, used when deleting an older entry. */
+        category?: string;
+        user?: string;
+        sheet?: string;
+      }
     | { kind: "investment"; date: string; amount: number; category: string },
 ): Promise<void> {
   const snapshot = await readSnapshot(db, userId, spreadsheetId);
@@ -105,7 +114,12 @@ export async function removeFromSnapshot(
   if (entry.kind === "expense") {
     const i = data.expenses.findIndex(
       (e) =>
-        e.date === entry.date && e.amount === entry.amount && e.description === entry.description,
+        e.date === entry.date &&
+        e.amount === entry.amount &&
+        e.description === entry.description &&
+        (entry.category === undefined || e.category === entry.category) &&
+        (entry.user === undefined || e.user === entry.user) &&
+        (entry.sheet === undefined || e.sheet === entry.sheet),
     );
     if (i === -1) return;
     data.expenses = data.expenses.filter((_, n) => n !== i);

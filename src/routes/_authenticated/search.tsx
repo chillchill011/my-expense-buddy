@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { SetupNotice } from "@/components/DashboardState";
+import { DeleteEntryButton } from "@/components/DeleteEntryButton";
 import { SelectField } from "@/components/Filters";
 import { EmptyState, Panel, SectionHeading } from "@/components/Panels";
 
@@ -65,6 +66,7 @@ function SearchView({ data }: { data: ExpenseDataset }) {
   const [category, setCategory] = useState("all");
   const [user, setUser] = useState("all");
   const [query, setQuery] = useState("");
+  const [notice, setNotice] = useState("");
 
   const matches = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -159,6 +161,11 @@ function SearchView({ data }: { data: ExpenseDataset }) {
                 }`
           }
         />
+        {notice ? (
+          <p className="mb-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+            {notice}
+          </p>
+        ) : null}
         <Panel>
           {rows.length === 0 ? (
             <EmptyState message="Nothing found. Try a different category, month or keyword." />
@@ -189,6 +196,7 @@ function SearchView({ data }: { data: ExpenseDataset }) {
                   <span className="num shrink-0 text-sm font-semibold text-foreground">
                     {money(expense.amount)}
                   </span>
+                  <DeleteEntryButton expense={expense} onDeleted={setNotice} />
                 </li>
               ))}
             </ul>

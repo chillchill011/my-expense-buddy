@@ -8,42 +8,87 @@ import {
   Search,
   Settings,
   LogOut,
+  UserRound,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { SyncButton } from "@/components/SyncButton";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
+/** Primary screens — these fill the phone's bottom bar and the sidebar. */
 const NAV = [
   { to: "/", label: "Overview", icon: LayoutDashboard },
   { to: "/expenses", label: "Expenses", icon: ReceiptText },
   { to: "/investments", label: "Invest", icon: TrendingUp },
   { to: "/loans", label: "Loans", icon: Landmark },
-  { to: "/search", label: "Search", icon: Search },
-  { to: "/setup", label: "Sheet", icon: Settings },
 ] as const;
 
-function SignOutButton({ compact = false }: { compact?: boolean }) {
+function useSignOut() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  return async () => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
+}
+
+/** Corner account button: sheet settings and sign out live behind this. */
+function AccountMenu() {
+  const [open, setOpen] = useState(false);
+  const signOut = useSignOut();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: MouseEvent) => {
+      if (!ref.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
   return (
-    <button
-      type="button"
-      onClick={async () => {
-        await queryClient.cancelQueries();
-        queryClient.clear();
-        await supabase.auth.signOut();
-        navigate({ to: "/auth", replace: true });
-      }}
-      className={cn(
-        "flex items-center gap-2 rounded-lg text-muted-foreground transition-colors hover:text-foreground",
-        compact ? "text-xs" : "px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent",
-      )}
-    >
-      <LogOut className="size-4" />
-      <span>Sign out</span>
-    </button>
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Account menu"
+        aria-expanded={open}
+        className={cn(
+          "flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground",
+          open && "border-ring text-foreground",
+        )}
+      >
+        <UserRound className="size-4.5" />
+      </button>
+
+      {open ? (
+        <div className="panel-raised absolute right-0 top-11 z-50 w-48 overflow-hidden rounded-xl border border-border bg-card p-1 shadow-lg">
+          <Link
+            to="/setup"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-muted"
+          >
+            <Settings className="size-4 text-muted-foreground" />
+            <span>Sheet settings</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              void signOut();
+            }}
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
+          >
+            <LogOut className="size-4 text-muted-foreground" />
+            <span>Sign out</span>
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -77,6 +122,20 @@ function NavItems({ variant }: { variant: "bottom" | "side" }) {
   );
 }
 
+/** Search now lives in the top corner instead of the bottom bar. */
+function SearchLink() {
+  return (
+    <Link
+      to="/search"
+      aria-label="Open search"
+      className="flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+      activeProps={{ className: "border-ring text-primary" }}
+    >
+      <Search className="size-4.5" />
+    </Link>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background lg:flex">
@@ -91,21 +150,27 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="flex flex-col gap-1">
           <NavItems variant="side" />
         </nav>
-        <div className="mt-auto flex flex-col gap-1 pt-6">
-          <SyncButton />
-          <SignOutButton />
+        <div className="mt-auto flex items-center justify-between gap-2 pt-6">
+          <SyncButton compact />
+          <div className="flex items-center gap-2">
+            <SearchLink />
+            <AccountMenu />
+          </div>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar */}
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/85 px-4 py-3 backdrop-blur-lg lg:hidden">
-          <p className="font-display text-base font-semibold tracking-tight">
-            Expense<span className="text-primary">.</span>
-          </p>
-          <div className="flex items-center gap-4">
+        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur-lg lg:hidden">
+          <div className="flex items-center gap-3">
+            <SearchLink />
+            <p className="font-display text-base font-semibold tracking-tight">
+              Expense<span className="text-primary">.</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
             <SyncButton compact />
-            <SignOutButton compact />
+            <AccountMenu />
           </div>
         </header>
 
