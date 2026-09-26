@@ -8,6 +8,7 @@ import { addExpense, undoExpense } from "@/lib/expense.functions";
 import { matchCategory, parseEntry, type ParsedEntry } from "@/lib/expense-parse";
 import type { ExpenseDataset } from "@/lib/expense-types";
 import { money, userLabel } from "@/lib/format";
+import { peopleWithMe, useEntryName } from "@/lib/use-entry-name";
 import { cn } from "@/lib/utils";
 
 const USER_STORAGE_KEY = "expense-quick-add-user";
@@ -28,7 +29,8 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
   const undo = useServerFn(undoExpense);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const people = data.users.length ? data.users : ["aniketthanage", "gauri_2009"];
+  const me = useEntryName();
+  const people = peopleWithMe(data.users, me);
   // Several sheet handles collapse to the same friendly name, so show the raw
   // handle whenever the label alone would be ambiguous.
   const labelCounts = new Map<string, number>();
