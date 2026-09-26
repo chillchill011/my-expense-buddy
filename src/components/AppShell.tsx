@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { SyncButton } from "@/components/SyncButton";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
