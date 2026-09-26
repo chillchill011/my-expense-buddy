@@ -211,7 +211,7 @@ export type AddInvestmentInput = {
 };
 
 export type AddInvestmentResult =
-  | { status: "added"; tab: string; row: number | null; date: string }
+  | { status: "added"; tab: string; row: number | null; date: string; createdTab?: boolean }
   | { status: "no_tab"; tab: string; message: string }
   | { status: "error"; message: string };
 
