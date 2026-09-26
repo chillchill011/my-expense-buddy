@@ -235,6 +235,11 @@ export function InvestmentAdd({ data }: { data: ExpenseDataset }) {
               Undo
             </button>
           ) : null}
+          {saved.createdTab ? (
+            <span className="w-full text-muted-foreground">
+              Started a new “{saved.tab}” sheet for this year.
+            </span>
+          ) : null}
         </div>
       ) : null}
     </section>
