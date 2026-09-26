@@ -64,6 +64,8 @@ export function SyncButton({ compact = false }: { compact?: boolean }) {
     void sync();
   }, [syncedAt, sync]);
 
+  if (noSheet) return null;
+
   return (
     <button
       type="button"
@@ -79,4 +81,5 @@ export function SyncButton({ compact = false }: { compact?: boolean }) {
       <span>{busy ? "Syncing…" : agoLabel(syncedAt)}</span>
     </button>
   );
+
 }
