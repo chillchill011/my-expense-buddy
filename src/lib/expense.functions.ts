@@ -529,3 +529,216 @@ export const undoInvestment = createServerFn({ method: "POST" })
       }
     },
   );
+
+
+/** Column headings used when the "Loan repayment" tab has to be created. */
+const LOAN_REPAYMENT_HEADERS = ["Date", "Amount", "User", "Loan", "Description"];
+/** Column headings used when the "Monthly Budgets" tab has to be created. */
+const BUDGET_HEADERS = ["Month", "Budget Amount", "Notes", "Updated"];
+
+export type AddLoanRepaymentInput = {
+  amount: number;
+  /** ISO yyyy-mm-dd, never in the future. */
+  date: string;
+  loan: string;
+  user: string;
+  description: string;
+};
+
+export type AddLoanRepaymentResult =
+  | { status: "added"; tab: string; row: number | null; date: string; createdTab?: boolean }
+  | { status: "error"; message: string };
+
+function todayIsoDate(): string {
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(
+    t.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+/**
+ * Appends one loan repayment to the "Loan repayment" tab:
+ * Date | Amount | User | Loan | Description.
+ */
+export const addLoanRepayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: AddLoanRepaymentInput) => {
+    const amount = Number(input.amount);
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error("Invalid amount");
+
+    const date = String(input.date ?? "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Invalid date");
+    if (date > todayIsoDate()) throw new Error("Date cannot be in the future");
+
+    const loan = String(input.loan ?? "").trim();
+    if (!loan) throw new Error("Missing loan");
+    const user = String(input.user ?? "").trim();
+    if (!user) throw new Error("Missing user");
+
+    return {
+      amount,
+      date,
+      loan: loan.slice(0, 120),
+      user: user.slice(0, 60),
+      description: String(input.description ?? "").trim().slice(0, 300),
+    } satisfies AddLoanRepaymentInput;
+  })
+  .handler(async ({ data, context }): Promise<AddLoanRepaymentResult> => {
+    const { appendRow, ensureTab, listTabTitles } = await import("./sheets.server");
+    const { invalidateExpenseCache } = await import("./expense-data.server");
+
+    const [y, m, d] = data.date.split("-") as [string, string, string];
+    const displayDate = `${d}/${m}/${y}`;
+
+    try {
+      const spreadsheetId = await spreadsheetFor(context);
+      if (!spreadsheetId) {
+        return { status: "error", message: "Link your Google Sheet before adding entries." };
+      }
+
+      // Keep using whichever spelling already exists in the sheet.
+      const titles = await listTabTitles(spreadsheetId);
+      const tab =
+        titles.find((t) => t === "Loan repayment" || t === "Loan Repayment") ?? "Loan repayment";
+      const createdTab = await ensureTab(spreadsheetId, tab, LOAN_REPAYMENT_HEADERS);
+
+      const row = await appendRow(spreadsheetId, tab, [
+        displayDate,
+        data.amount,
+        data.user,
+        data.loan,
+        data.description,
+      ]);
+
+      invalidateExpenseCache(spreadsheetId);
+
+      const { appendToSnapshot } = await import("./snapshot.server");
+      await appendToSnapshot(context.supabase, context.userId, spreadsheetId, {
+        kind: "loanRepayment",
+        row: {
+          date: data.date,
+          amount: data.amount,
+          user: data.user,
+          loan: data.loan,
+          description: data.description,
+        },
+      });
+
+      return { status: "added", tab, row, date: displayDate, createdTab };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to add loan repayment:", message);
+      return { status: "error", message };
+    }
+  });
+
+/** Removes a just-added repayment row, only when it still matches what we wrote. */
+export const undoLoanRepayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { tab: string; row: number; amount: number; loan: string }) => ({
+    tab: String(input.tab),
+    row: Number(input.row),
+    amount: Number(input.amount),
+    loan: String(input.loan ?? ""),
+  }))
+  .handler(
+    async ({ data, context }): Promise<{ status: "removed" | "skipped"; message?: string }> => {
+      const { a1, deleteRow, getRange } = await import("./sheets.server");
+      const { invalidateExpenseCache } = await import("./expense-data.server");
+
+      try {
+        const spreadsheetId = await spreadsheetFor(context);
+        if (!spreadsheetId) return { status: "skipped", message: "No sheet is linked." };
+
+        const rows = await getRange(spreadsheetId, a1(data.tab, `A${data.row}:E${data.row}`));
+        const row = rows[0];
+        const amount = Number(String(row?.[1] ?? "").replace(/[^0-9.-]/g, ""));
+        const loan = String(row?.[3] ?? "").trim();
+
+        if (!row || amount !== data.amount || loan !== data.loan.trim()) {
+          return { status: "skipped", message: "That entry has already changed in the sheet." };
+        }
+
+        await deleteRow(spreadsheetId, data.tab, data.row);
+        invalidateExpenseCache(spreadsheetId);
+
+        const { parseDate } = await import("./expense-normalize");
+        const { removeFromSnapshot } = await import("./snapshot.server");
+        const date = parseDate(row[0]);
+        if (date) {
+          await removeFromSnapshot(context.supabase, context.userId, spreadsheetId, {
+            kind: "loanRepayment",
+            date,
+            amount: data.amount,
+            loan: data.loan.trim(),
+          });
+        }
+        return { status: "removed" };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("Failed to undo repayment:", message);
+        return { status: "skipped", message };
+      }
+    },
+  );
+
+export type SetBudgetResult =
+  | { status: "saved"; month: string; amount: number; createdTab?: boolean }
+  | { status: "error"; message: string };
+
+/**
+ * Writes one month's budget into the "Monthly Budgets" tab, replacing the
+ * existing row for that month or appending a new one. The tab is created with
+ * headings when it does not exist yet.
+ */
+export const setMonthlyBudget = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { month: string; amount: number; notes?: string }) => {
+    const month = String(input.month ?? "").trim();
+    if (!/^\d{4}-\d{2}$/.test(month)) throw new Error("Invalid month");
+    const amount = Number(input.amount);
+    if (!Number.isFinite(amount) || amount < 0) throw new Error("Invalid amount");
+    return { month, amount, notes: String(input.notes ?? "").trim().slice(0, 200) };
+  })
+  .handler(async ({ data, context }): Promise<SetBudgetResult> => {
+    const { a1, appendRow, ensureTab, getRange, updateRange } = await import("./sheets.server");
+    const { BUDGET_TAB, invalidateExpenseCache } = await import("./expense-data.server");
+    const { upsertBudgetInSnapshot } = await import("./snapshot.server");
+
+    try {
+      const spreadsheetId = await spreadsheetFor(context);
+      if (!spreadsheetId) {
+        return { status: "error", message: "Link your Google Sheet before setting a budget." };
+      }
+
+      const createdTab = await ensureTab(spreadsheetId, BUDGET_TAB, BUDGET_HEADERS);
+      const today = todayIsoDate();
+      const [ty, tm, td] = today.split("-") as [string, string, string];
+      const updated = `${td}/${tm}/${ty}`;
+      const values = [data.month, data.amount, data.notes, updated];
+
+      const rows = createdTab ? [] : await getRange(spreadsheetId, a1(BUDGET_TAB, "A2:D"));
+      const index = rows.findIndex((row) => String(row?.[0] ?? "").trim() === data.month);
+
+      if (index === -1) {
+        await appendRow(spreadsheetId, BUDGET_TAB, values);
+      } else {
+        const rowNumber = index + 2;
+        await updateRange(spreadsheetId, a1(BUDGET_TAB, `A${rowNumber}:D${rowNumber}`), [values]);
+      }
+
+      invalidateExpenseCache(spreadsheetId);
+      await upsertBudgetInSnapshot(context.supabase, context.userId, spreadsheetId, {
+        month: data.month,
+        amount: data.amount,
+        notes: data.notes,
+        updatedAt: today,
+      });
+
+      return { status: "saved", month: data.month, amount: data.amount, createdTab };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to save budget:", message);
+      return { status: "error", message };
+    }
+  });
