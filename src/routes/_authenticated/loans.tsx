@@ -78,8 +78,14 @@ function Loans({ data }: { data: ExpenseDataset }) {
   );
 
   if (loanAccounts.length === 0 && loanRepayments.length === 0) {
-    return <EmptyState message="No loans or repayments found in your sheet yet." />;
+    return (
+      <div className="space-y-6">
+        <LoanRepaymentAdd data={data} />
+        <EmptyState message="No loans or repayments found in your sheet yet." />
+      </div>
+    );
   }
+
 
   return (
     <div className="space-y-6">
