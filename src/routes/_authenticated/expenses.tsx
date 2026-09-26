@@ -140,8 +140,9 @@ function Expenses({ data }: { data: ExpenseDataset }) {
           Expenses
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Every entry your bot has logged, searchable.
+          Every expense you have logged, searchable.
         </p>
+
       </header>
 
 

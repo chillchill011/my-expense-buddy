@@ -1,7 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowDownRight, Banknote, TrendingUp, Wallet } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 
 import { AppShell } from "@/components/AppShell";
 import { BudgetPanel } from "@/components/BudgetPanel";
@@ -49,6 +50,13 @@ export const Route = createFileRoute("/_authenticated/")({
 
 function OverviewPage() {
   const { data: result } = useSuspenseQuery(dashboardQueryOptions);
+  const navigate = useNavigate();
+
+  // First-time users have no sheet yet — take them straight to the setup page.
+  const needsSetup = result.status === "setup" && result.code === "missing_spreadsheet_id";
+  useEffect(() => {
+    if (needsSetup) void navigate({ to: "/setup" });
+  }, [needsSetup, navigate]);
 
   if (result.status !== "ok") {
     return (
@@ -57,6 +65,7 @@ function OverviewPage() {
       </AppShell>
     );
   }
+
 
   return (
     <AppShell>
@@ -93,9 +102,17 @@ function Overview({ data }: { data: ExpenseDataset }) {
   const repaid = sum(monthRepayments);
   const outflow = total + repaid;
 
+  // A brand-new sheet has no rows yet: still show the add box so the very
+  // first entry can be made right here.
   if (months.length === 0) {
-    return <EmptyState message="No expenses found in your sheet yet." />;
+    return (
+      <div className="space-y-6">
+        <QuickAdd data={data} />
+        <EmptyState message="Welcome to Rupeeflow. Add your first expense above to get started." />
+      </div>
+    );
   }
+
 
   return (
     <div className="space-y-6">
