@@ -75,9 +75,23 @@ export type AddExpenseInput = {
 };
 
 export type AddExpenseResult =
-  | { status: "added"; tab: string; row: number | null; date: string }
+  | { status: "added"; tab: string; row: number | null; date: string; createdTab?: boolean }
   | { status: "no_tab"; tab: string; message: string }
   | { status: "error"; message: string };
+
+/** Column headings used when a new monthly expense tab has to be created. */
+const EXPENSE_HEADERS = ["Date", "Amount", "Description", "Category", "User", "Details"];
+/** Column headings used when a new "<year> Overview" investment tab has to be created. */
+const INVESTMENT_HEADERS = [
+  "Date",
+  "Amount",
+  "Category",
+  "User",
+  "Description",
+  "Returns",
+  "Return Date",
+];
+
 
 function monthTab(now: Date): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
