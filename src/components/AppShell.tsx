@@ -9,6 +9,8 @@ import {
   Settings,
   LogOut,
   UserRound,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -186,6 +188,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <SyncButton compact />
           <div className="flex items-center gap-2">
             <SearchLink />
+            <ThemeToggle />
             <AccountMenu />
           </div>
         </div>
@@ -202,6 +205,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-3">
             <SyncButton compact />
+            <ThemeToggle />
             <AccountMenu />
           </div>
         </header>

@@ -14,7 +14,9 @@ import {
 } from "@/lib/settings.functions";
 
 /** Optional: a public, view-only starter spreadsheet users can copy. */
-const TEMPLATE_ID = import.meta.env["VITE_TEMPLATE_SHEET_ID"] as string | undefined;
+const TEMPLATE_ID =
+  (import.meta.env["VITE_TEMPLATE_SHEET_ID"] as string | undefined) ||
+  "1H3qoj5mNiFcI-HGEDbHkCAbiRXkBz_EenXFVI3AQLVo";
 
 const REQUIRED_TABS = [
   "Master",
@@ -141,6 +143,16 @@ function SetupPage() {
               >
                 <Sheet className="size-3.5" /> Make a copy
               </a>
+            ) : null}
+            {TEMPLATE_ID ? (
+              <div className="mt-2 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
+                <p>The copy already has every tab this app needs:</p>
+                <ul className="mt-1.5 list-inside list-disc space-y-0.5">
+                  {REQUIRED_TABS.map((tab) => (
+                    <li key={tab}>{tab}</li>
+                  ))}
+                </ul>
+              </div>
             ) : (
               <div className="mt-2 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
                 <p>Your sheet needs these tabs, with the same column headings:</p>
