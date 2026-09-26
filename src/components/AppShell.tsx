@@ -66,7 +66,15 @@ function AccountMenu() {
       </button>
 
       {open ? (
-        <div className="panel-raised absolute right-0 top-11 z-50 w-48 overflow-hidden rounded-xl border border-border bg-card p-1 shadow-lg">
+        <div className="panel-raised absolute right-0 top-11 z-50 w-52 overflow-hidden rounded-xl border border-border bg-card p-1 shadow-lg">
+          <Link
+            to="/profile"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-muted"
+          >
+            <UserRound className="size-4 text-muted-foreground" />
+            <span>Your account</span>
+          </Link>
           <Link
             to="/setup"
             onClick={() => setOpen(false)}
@@ -75,6 +83,7 @@ function AccountMenu() {
             <Settings className="size-4 text-muted-foreground" />
             <span>Sheet settings</span>
           </Link>
+
           <button
             type="button"
             onClick={() => {
