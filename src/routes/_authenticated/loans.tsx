@@ -12,6 +12,7 @@ import {
 } from "recharts";
 
 import { AppShell } from "@/components/AppShell";
+import { LoanRepaymentAdd } from "@/components/LoanRepaymentAdd";
 import { SetupNotice } from "@/components/DashboardState";
 import {
   ChartTooltip,
