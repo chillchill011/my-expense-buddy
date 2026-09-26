@@ -117,6 +117,7 @@ export function InvestmentAdd({ data }: { data: ExpenseDataset }) {
       category,
       user,
       date: result.date,
+      createdTab: result.createdTab === true,
     });
     setAmount("");
     setDescription("");

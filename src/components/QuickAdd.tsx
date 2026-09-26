@@ -83,6 +83,7 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
       description: entry.description,
       category,
       user,
+      createdTab: result.createdTab === true,
     });
     setValue("");
     inputRef.current?.focus();
