@@ -19,6 +19,7 @@ type Saved = {
   description: string;
   category: string;
   user: string;
+  createdTab?: boolean;
 };
 
 export function QuickAdd({ data }: { data: ExpenseDataset }) {

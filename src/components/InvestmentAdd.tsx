@@ -24,6 +24,7 @@ type Saved = {
   category: string;
   user: string;
   date: string;
+  createdTab?: boolean;
 };
 
 const fieldClass =
