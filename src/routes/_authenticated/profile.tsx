@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, ExternalLink, Monitor, Moon, Sun } from "lucide-react";
@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { getMySettings, saveDefaultPerson } from "@/lib/settings.functions";
+import { getMySettings } from "@/lib/settings.functions";
 import { useTheme, type Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -60,10 +60,8 @@ function Section({
 }
 
 function ProfilePage() {
-  const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
   const fetchSettings = useServerFn(getMySettings);
-  const savePerson = useServerFn(saveDefaultPerson);
 
   const [account, setAccount] = useState<{ email: string; createdAt: string | null } | null>(null);
 
@@ -80,20 +78,6 @@ function ProfilePage() {
 
   const settings = useQuery({ queryKey: ["user-settings"], queryFn: () => fetchSettings() });
 
-  const [person, setPerson] = useState("");
-  const [personSaved, setPersonSaved] = useState(false);
-  useEffect(() => {
-    if (settings.data) setPerson(settings.data.defaultPerson ?? "");
-  }, [settings.data]);
-
-  const personMutation = useMutation({
-    mutationFn: (value: string) => savePerson({ data: { person: value } }),
-    onSuccess: async () => {
-      setPersonSaved(true);
-      setTimeout(() => setPersonSaved(false), 2500);
-      await queryClient.invalidateQueries({ queryKey: ["user-settings"] });
-    },
-  });
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
