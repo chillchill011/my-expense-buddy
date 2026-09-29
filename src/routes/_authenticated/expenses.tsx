@@ -260,13 +260,14 @@ function Expenses({ data }: { data: ExpenseDataset }) {
         <Panel className="lg:col-span-3">
           <SectionHeading
             title="Recent transactions"
-            description={`Last 5 in ${monthLabel(currentMonthKey)}`}
+            description={`Last 5 in ${recentScopeLabel}`}
           />
           <RecentTransactions
-            expenses={currentMonthExpenses}
-            monthLabel={monthLabel(currentMonthKey)}
+            expenses={recentExpenses}
+            monthLabel={recentScopeLabel}
             limit={5}
           />
+
         </Panel>
       </div>
 
