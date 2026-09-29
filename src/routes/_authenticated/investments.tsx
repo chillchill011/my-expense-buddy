@@ -112,6 +112,11 @@ function Investments({ data }: { data: ExpenseDataset }) {
   ];
   const monthSelected = month !== "all" && monthsInYear.includes(month);
 
+  // Stat card follows the month filter; with "All months" it shows the current month.
+  const statMonth = monthSelected ? month : thisMonthKey;
+  const statMonthTotal = sum(forYear.filter((i) => i.date.slice(5, 7) === statMonth));
+  const statMonthLabel = `Invested in ${MONTH_SHORT[Number(statMonth) - 1] ?? statMonth} ${year}`;
+
   const listRows = useMemo(() => {
     const rows = monthSelected ? forYear.filter((i) => i.date.slice(5, 7) === month) : forYear;
     const sorted = [...rows].sort((a, b) => b.date.localeCompare(a.date));
