@@ -177,33 +177,6 @@ function ProfilePage() {
           </div>
         </Section>
 
-        <Section
-          title="Your name in entries"
-          description="This name is picked by default when you add an expense or investment."
-        >
-          <form
-            className="flex flex-wrap gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              personMutation.mutate(person.trim());
-            }}
-          >
-            <input
-              value={person}
-              onChange={(e) => setPerson(e.target.value)}
-              placeholder="e.g. your first name"
-              className={cn(inputClass, "min-w-0 flex-1")}
-            />
-            <button
-              type="submit"
-              disabled={personMutation.isPending}
-              className="rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
-            >
-              {personMutation.isPending ? "Saving…" : "Save"}
-            </button>
-          </form>
-          {personSaved ? <p className="text-xs text-positive">Saved.</p> : null}
-        </Section>
 
         <Section title="Change password" description="At least 8 characters.">
           <form
