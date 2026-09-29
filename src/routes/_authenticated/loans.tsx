@@ -25,7 +25,7 @@ import { StatCard } from "@/components/StatCard";
 import { byMonth, byUser, loanProgress, sum } from "@/lib/analytics";
 import { dashboardQueryOptions } from "@/lib/dashboard-query";
 import type { ExpenseDataset } from "@/lib/expense-types";
-import { fullDateLabel, money, moneyCompact, monthLabelShort } from "@/lib/format";
+import { fullDateLabel, money, moneyCompact, monthLabelShort, userLabel } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/loans")({
   loader: ({ context }) => context.queryClient.ensureQueryData(dashboardQueryOptions),
@@ -214,6 +214,7 @@ function Loans({ data }: { data: ExpenseDataset }) {
               >
                 <span className="text-sm text-foreground">
                   {r.loan}
+                  {r.user ? <span className="text-muted-foreground"> · {userLabel(r.user)}</span> : null}
                   {r.description ? (
                     <span className="text-muted-foreground"> · {r.description}</span>
                   ) : null}
