@@ -204,12 +204,31 @@ function SetupPage() {
             <p className="font-medium text-foreground">3. Your name on entries</p>
             <p className="mt-1 text-xs text-muted-foreground">
               This name is saved with everything you add, so everyone at home can tell entries
-              apart.
+              apart. If your name is already used in the sheet, pick it below so your new entries
+              stay together.
             </p>
+            {sheetPeople.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {sheetPeople.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => setPerson(name)}
+                    className={
+                      person === name
+                        ? "rounded-full border border-ring bg-muted px-3 py-1.5 text-xs text-foreground"
+                        : "rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    }
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <input
               value={person}
               onChange={(e) => setPerson(e.target.value)}
-              placeholder="e.g. aniket"
+              placeholder={emailHandle ? `e.g. ${emailHandle}` : "e.g. your name"}
               maxLength={60}
               className="mt-2 w-full rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
             />
