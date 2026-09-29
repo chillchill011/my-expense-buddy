@@ -63,15 +63,18 @@ function SetupPage() {
     queryFn: () => fetchSettings(),
   });
 
+  const dashboard = useQuery({ ...dashboardQueryOptions, retry: false });
+  const sheetPeople = dashboard.data?.status === "ok" ? dashboard.data.data.users : [];
+
   const [value, setValue] = useState("");
   const [person, setPerson] = useState("");
+  const [emailHandle, setEmailHandle] = useState("");
   const [result, setResult] = useState<LinkSheetResult | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void supabase.auth.getSession().then(({ data }) => {
-      if (cancelled) return;
-      setPerson((current) => current || nameFromEmail(data.session?.user.email));
+      if (!cancelled) setEmailHandle(nameFromEmail(data.session?.user.email));
     });
     return () => {
       cancelled = true;
