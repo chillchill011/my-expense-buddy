@@ -91,7 +91,7 @@ function AccountMenu() {
       </button>
 
       {open ? (
-        <div className="panel-raised absolute right-0 top-11 z-50 w-52 overflow-hidden rounded-xl border border-border bg-card p-1 shadow-lg">
+        <div className="panel-raised absolute right-0 top-11 z-50 w-52 overflow-hidden rounded-xl border border-border bg-card p-1 shadow-lg lg:bottom-11 lg:top-auto">
           <Link
             to="/profile"
             onClick={() => setOpen(false)}

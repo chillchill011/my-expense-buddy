@@ -81,7 +81,7 @@ function Investments({ data }: { data: ExpenseDataset }) {
   const forYear = useMemo(() => inYear(investments, year), [investments, year]);
   const lifetime = sum(investments);
   const yearTotal = sum(forYear);
-  const returns = forYear.reduce((acc, i) => acc + (i.returns ?? 0), 0);
+  const thisMonthKey = String(new Date().getMonth() + 1).padStart(2, "0");
 
   // Contributions per year, split per person, for the stacked chart.
   const people = useMemo(
