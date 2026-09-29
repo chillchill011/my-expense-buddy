@@ -214,6 +214,7 @@ function Loans({ data }: { data: ExpenseDataset }) {
               >
                 <span className="text-sm text-foreground">
                   {r.loan}
+                  {r.user ? <span className="text-muted-foreground"> · {userLabel(r.user)}</span> : null}
                   {r.description ? (
                     <span className="text-muted-foreground"> · {r.description}</span>
                   ) : null}

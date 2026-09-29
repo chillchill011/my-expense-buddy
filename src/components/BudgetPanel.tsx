@@ -11,9 +11,10 @@ import { setMonthlyBudget } from "@/lib/expense.functions";
 import type { ExpenseDataset } from "@/lib/expense-types";
 import { money, monthLabel } from "@/lib/format";
 
-type Period = "this-month" | "last-month" | "this-year" | "last-year" | "all";
+type Period = "last-3-months" | "this-month" | "last-month" | "this-year" | "last-year" | "all";
 
 const PERIODS: Array<{ value: Period; label: string }> = [
+  { value: "last-3-months", label: "Last 3 months" },
   { value: "this-month", label: "This month" },
   { value: "last-month", label: "Last month" },
   { value: "this-year", label: "This year" },
@@ -53,7 +54,7 @@ export function BudgetPanel({ data, month }: { data: ExpenseDataset; month: stri
 
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const [period, setPeriod] = useState<Period>("this-year");
+  const [period, setPeriod] = useState<Period>("last-3-months");
 
   const months = useMemo(() => {
     const keys = new Set<string>([
@@ -65,6 +66,10 @@ export function BudgetPanel({ data, month }: { data: ExpenseDataset; month: stri
     const all = Array.from(keys).sort((a, b) => (a < b ? 1 : -1));
     const thisYear = String(now.getFullYear());
     const lastYear = String(now.getFullYear() - 1);
+    if (period === "last-3-months") {
+      const cutoff = prevMonth(prevMonth(currentMonth));
+      return all.filter((k) => k >= cutoff && k <= currentMonth);
+    }
     if (period === "this-month") return all.filter((k) => k === currentMonth);
     if (period === "last-month") return all.filter((k) => k === prevMonth(currentMonth));
     if (period === "this-year") return all.filter((k) => k.startsWith(thisYear));
