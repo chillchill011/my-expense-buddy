@@ -105,6 +105,20 @@ function Expenses({ data }: { data: ExpenseDataset }) {
     [data.expenses, currentMonthKey],
   );
 
+  const filtersUntouched =
+    year === currentYear && month === "all" && category === "all" && user === "all" && !search.trim();
+  const recentExpenses = filtersUntouched ? currentMonthExpenses : filtered;
+  const recentScopeLabel = filtersUntouched
+    ? monthLabel(currentMonthKey)
+    : [
+        month === "all" ? String(year) : `${MONTH_SHORT[Number(month) - 1] ?? month} ${year}`,
+        category === "all" ? null : category,
+        user === "all" ? null : userLabel(user),
+      ]
+        .filter(Boolean)
+        .join(" · ");
+
+
   const categoryOptions = [
     { value: "all", label: "All categories" },
     ...Array.from(new Set(yearExpenses.map((e) => e.category)))
@@ -246,13 +260,14 @@ function Expenses({ data }: { data: ExpenseDataset }) {
         <Panel className="lg:col-span-3">
           <SectionHeading
             title="Recent transactions"
-            description={`Last 5 in ${monthLabel(currentMonthKey)}`}
+            description={`Last 5 in ${recentScopeLabel}`}
           />
           <RecentTransactions
-            expenses={currentMonthExpenses}
-            monthLabel={monthLabel(currentMonthKey)}
+            expenses={recentExpenses}
+            monthLabel={recentScopeLabel}
             limit={5}
           />
+
         </Panel>
       </div>
 
