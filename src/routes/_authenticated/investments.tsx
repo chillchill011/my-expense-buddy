@@ -187,9 +187,9 @@ function Investments({ data }: { data: ExpenseDataset }) {
         <StatCard label={`Invested in ${year}`} value={money(yearTotal)} tone="primary" />
         <StatCard label="Lifetime invested" value={money(lifetime)} />
         <StatCard
-          label={`Returns logged in ${year}`}
-          value={money(returns)}
-          tone={returns > 0 ? "positive" : "neutral"}
+          label={statMonthLabel}
+          value={money(statMonthTotal)}
+          tone={statMonthTotal > 0 ? "positive" : "neutral"}
         />
         <StatCard label="Contributions" value={String(forYear.length)} />
       </div>
