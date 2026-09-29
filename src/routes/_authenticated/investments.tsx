@@ -81,7 +81,7 @@ function Investments({ data }: { data: ExpenseDataset }) {
   const forYear = useMemo(() => inYear(investments, year), [investments, year]);
   const lifetime = sum(investments);
   const yearTotal = sum(forYear);
-  const returns = forYear.reduce((acc, i) => acc + (i.returns ?? 0), 0);
+  const thisMonthKey = String(new Date().getMonth() + 1).padStart(2, "0");
 
   // Contributions per year, split per person, for the stacked chart.
   const people = useMemo(
@@ -111,6 +111,11 @@ function Investments({ data }: { data: ExpenseDataset }) {
     ...monthsInYear.map((m) => ({ value: m, label: MONTH_SHORT[Number(m) - 1] ?? m })),
   ];
   const monthSelected = month !== "all" && monthsInYear.includes(month);
+
+  // Stat card follows the month filter; with "All months" it shows the current month.
+  const statMonth = monthSelected ? month : thisMonthKey;
+  const statMonthTotal = sum(forYear.filter((i) => i.date.slice(5, 7) === statMonth));
+  const statMonthLabel = `Invested in ${MONTH_SHORT[Number(statMonth) - 1] ?? statMonth} ${year}`;
 
   const listRows = useMemo(() => {
     const rows = monthSelected ? forYear.filter((i) => i.date.slice(5, 7) === month) : forYear;
@@ -182,9 +187,9 @@ function Investments({ data }: { data: ExpenseDataset }) {
         <StatCard label={`Invested in ${year}`} value={money(yearTotal)} tone="primary" />
         <StatCard label="Lifetime invested" value={money(lifetime)} />
         <StatCard
-          label={`Returns logged in ${year}`}
-          value={money(returns)}
-          tone={returns > 0 ? "positive" : "neutral"}
+          label={statMonthLabel}
+          value={money(statMonthTotal)}
+          tone={statMonthTotal > 0 ? "positive" : "neutral"}
         />
         <StatCard label="Contributions" value={String(forYear.length)} />
       </div>

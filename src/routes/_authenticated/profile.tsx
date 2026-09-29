@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, ExternalLink, Monitor, Moon, Sun } from "lucide-react";
@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { getMySettings, saveDefaultPerson } from "@/lib/settings.functions";
+import { getMySettings } from "@/lib/settings.functions";
 import { useTheme, type Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -60,10 +60,8 @@ function Section({
 }
 
 function ProfilePage() {
-  const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
   const fetchSettings = useServerFn(getMySettings);
-  const savePerson = useServerFn(saveDefaultPerson);
 
   const [account, setAccount] = useState<{ email: string; createdAt: string | null } | null>(null);
 
@@ -80,20 +78,6 @@ function ProfilePage() {
 
   const settings = useQuery({ queryKey: ["user-settings"], queryFn: () => fetchSettings() });
 
-  const [person, setPerson] = useState("");
-  const [personSaved, setPersonSaved] = useState(false);
-  useEffect(() => {
-    if (settings.data) setPerson(settings.data.defaultPerson ?? "");
-  }, [settings.data]);
-
-  const personMutation = useMutation({
-    mutationFn: (value: string) => savePerson({ data: { person: value } }),
-    onSuccess: async () => {
-      setPersonSaved(true);
-      setTimeout(() => setPersonSaved(false), 2500);
-      await queryClient.invalidateQueries({ queryKey: ["user-settings"] });
-    },
-  });
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -177,33 +161,6 @@ function ProfilePage() {
           </div>
         </Section>
 
-        <Section
-          title="Your name in entries"
-          description="This name is picked by default when you add an expense or investment."
-        >
-          <form
-            className="flex flex-wrap gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              personMutation.mutate(person.trim());
-            }}
-          >
-            <input
-              value={person}
-              onChange={(e) => setPerson(e.target.value)}
-              placeholder="e.g. your first name"
-              className={cn(inputClass, "min-w-0 flex-1")}
-            />
-            <button
-              type="submit"
-              disabled={personMutation.isPending}
-              className="rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
-            >
-              {personMutation.isPending ? "Saving…" : "Save"}
-            </button>
-          </form>
-          {personSaved ? <p className="text-xs text-positive">Saved.</p> : null}
-        </Section>
 
         <Section title="Change password" description="At least 8 characters.">
           <form
