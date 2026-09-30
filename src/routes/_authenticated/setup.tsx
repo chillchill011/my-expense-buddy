@@ -11,9 +11,11 @@ import { nameFromEmail } from "@/lib/use-entry-name";
 import {
   getMySettings,
   linkSpreadsheet,
+  saveDefaultPerson,
   unlinkSpreadsheet,
   type LinkSheetResult,
 } from "@/lib/settings.functions";
+
 
 /** Optional: a public, view-only starter spreadsheet users can copy. */
 const TEMPLATE_ID =
