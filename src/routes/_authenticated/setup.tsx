@@ -57,19 +57,24 @@ function SetupPage() {
   const fetchSettings = useServerFn(getMySettings);
   const link = useServerFn(linkSpreadsheet);
   const unlink = useServerFn(unlinkSpreadsheet);
+  const saveName = useServerFn(saveDefaultPerson);
 
   const settings = useQuery({
     queryKey: ["user-settings"],
     queryFn: () => fetchSettings(),
   });
 
-  const dashboard = useQuery({ ...dashboardQueryOptions, retry: false });
+  const current = settings.data?.spreadsheetId ?? null;
+  const shareWith = settings.data?.shareWith ?? null;
+
+  const dashboard = useQuery({ ...dashboardQueryOptions, retry: false, enabled: Boolean(current) });
   const sheetPeople = dashboard.data?.status === "ok" ? dashboard.data.data.users : [];
 
   const [value, setValue] = useState("");
   const [person, setPerson] = useState("");
   const [emailHandle, setEmailHandle] = useState("");
   const [result, setResult] = useState<LinkSheetResult | null>(null);
+  const [nameSaved, setNameSaved] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,7 +98,6 @@ function SetupPage() {
         setValue("");
         await queryClient.invalidateQueries({ queryKey: ["user-settings"] });
         await queryClient.invalidateQueries({ queryKey: dashboardQueryOptions.queryKey });
-        navigate({ to: "/" });
       }
     },
     onError: (error) =>
@@ -103,16 +107,23 @@ function SetupPage() {
       }),
   });
 
+  const savePerson = useMutation({
+    mutationFn: (input: string) => saveName({ data: { person: input } }),
+    onSuccess: async () => {
+      setNameSaved(true);
+      await queryClient.invalidateQueries({ queryKey: ["user-settings"] });
+    },
+  });
+
   const remove = useMutation({
     mutationFn: () => unlink(),
     onSuccess: async () => {
+      setNameSaved(false);
       await queryClient.invalidateQueries({ queryKey: ["user-settings"] });
       await queryClient.invalidateQueries({ queryKey: dashboardQueryOptions.queryKey });
     },
   });
 
-  const current = settings.data?.spreadsheetId ?? null;
-  const shareWith = settings.data?.shareWith ?? null;
 
   return (
     <AppShell>
