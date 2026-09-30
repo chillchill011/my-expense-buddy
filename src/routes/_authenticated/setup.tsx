@@ -212,49 +212,11 @@ function SetupPage() {
           </li>
 
           <li>
-            <p className="font-medium text-foreground">3. Your name on entries</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              This name is saved with everything you add, so everyone at home can tell entries
-              apart. If your name is already used in the sheet, pick it below so your new entries
-              stay together.
-            </p>
-            {sheetPeople.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {sheetPeople.map((name) => (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => setPerson(name)}
-                    className={
-                      person === name
-                        ? "rounded-full border border-ring bg-muted px-3 py-1.5 text-xs text-foreground"
-                        : "rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-                    }
-                  >
-                    {name}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            <input
-              value={person}
-              onChange={(e) => setPerson(e.target.value)}
-              placeholder={emailHandle ? `e.g. ${emailHandle}` : "e.g. your name"}
-              maxLength={60}
-              className="mt-2 w-full rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
-            />
-          </li>
-
-          <li>
-            <p className="font-medium text-foreground">4. Paste the link</p>
+            <p className="font-medium text-foreground">3. Paste the link</p>
             <form
               className="mt-2 flex flex-wrap gap-2"
               onSubmit={(e) => {
                 e.preventDefault();
-                if (!person.trim()) {
-                  setResult({ status: "error", message: "Add your name first." });
-                  return;
-                }
                 setResult(null);
                 save.mutate(value);
               }}
@@ -267,16 +229,101 @@ function SetupPage() {
               />
               <button
                 type="submit"
-                disabled={save.isPending || !value.trim() || !person.trim()}
+                disabled={save.isPending || !value.trim()}
                 className="rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
               >
-                {save.isPending ? "Checking…" : "Connect"}
+                {save.isPending ? "Checking…" : "Connect sheet"}
               </button>
             </form>
+            {result && result.status === "linked" ? (
+              <p className="mt-2 text-sm text-positive">
+                Sheet connected. Now pick your name below.
+              </p>
+            ) : null}
             {result && result.status !== "linked" ? (
               <p className="mt-2 text-sm text-destructive">{result.message}</p>
             ) : null}
           </li>
+
+          <li className={current ? undefined : "opacity-60"}>
+            <p className="font-medium text-foreground">4. Your name on entries</p>
+            {current ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                This name is saved with everything you add, so everyone at home can tell entries
+                apart. Pick a name already used in your sheet, or type a new one.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Connect your sheet above first — then you can pick from the names already used in
+                it.
+              </p>
+            )}
+            {current && sheetPeople.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {sheetPeople.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => {
+                      setPerson(name);
+                      setNameSaved(false);
+                    }}
+                    className={
+                      person === name
+                        ? "rounded-full border border-ring bg-muted px-3 py-1.5 text-xs text-foreground"
+                        : "rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    }
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <form
+              className="mt-2 flex flex-wrap gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                savePerson.mutate(person.trim());
+              }}
+            >
+              <input
+                value={person}
+                onChange={(e) => {
+                  setPerson(e.target.value);
+                  setNameSaved(false);
+                }}
+                disabled={!current}
+                placeholder={emailHandle ? `e.g. ${emailHandle}` : "e.g. your name"}
+                maxLength={60}
+                className="min-w-0 flex-1 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary disabled:cursor-not-allowed"
+              />
+              <button
+                type="submit"
+                disabled={!current || savePerson.isPending || !person.trim()}
+                className="rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
+              >
+                {savePerson.isPending ? "Saving…" : "Save name"}
+              </button>
+            </form>
+            {savePerson.isError ? (
+              <p className="mt-2 text-sm text-destructive">
+                Could not save your name. Please try again.
+              </p>
+            ) : null}
+            {nameSaved && !savePerson.isPending ? (
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <p className="text-sm text-positive">Saved as {person.trim()}.</p>
+                <button
+                  type="button"
+                  onClick={() => navigate({ to: "/" })}
+                  className="rounded-full border border-border px-3 py-1.5 text-xs text-foreground hover:bg-muted/60"
+                >
+                  Go to dashboard
+                </button>
+              </div>
+            ) : null}
+          </li>
+
         </ol>
       </div>
     </AppShell>
