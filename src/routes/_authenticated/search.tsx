@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { SetupNotice } from "@/components/DashboardState";
 import { DeleteEntryButton } from "@/components/DeleteEntryButton";
+import { EditEntryButton } from "@/components/EditEntryDialog";
 import { SelectField } from "@/components/Filters";
 import { EmptyState, Panel, SectionHeading } from "@/components/Panels";
 
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/search")({
       {
         name: "description",
         content:
-          "Search household entries by category, month, person or keyword and see the ten most recent matches.",
+          "Search household entries by category, month, person or keyword and see the 10, 25 or 50 most recent matches.",
       },
       { property: "og:title", content: "Search | Rupeeflow" },
       {
@@ -50,7 +51,6 @@ function SearchPage() {
   );
 }
 
-const LIMIT = 10;
 
 function SearchView({ data }: { data: ExpenseDataset }) {
   const years = useMemo(
@@ -67,6 +67,8 @@ function SearchView({ data }: { data: ExpenseDataset }) {
   const [user, setUser] = useState("all");
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState("");
+  const [limit, setLimit] = useState("10");
+  const LIMIT = Number(limit);
 
   const matches = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -103,6 +105,9 @@ function SearchView({ data }: { data: ExpenseDataset }) {
       .sort()
       .map((c) => ({ value: c, label: c })),
   ];
+  const editCategories = data.categories.length
+    ? data.categories
+    : categoryOptions.slice(1).map((c) => c.value);
   const userOptions = [
     { value: "all", label: "Everyone" },
     ...data.users.map((u) => ({ value: u, label: userLabel(u) })),
@@ -146,6 +151,12 @@ function SearchView({ data }: { data: ExpenseDataset }) {
             />
             <SelectField value={year} onChange={setYear} options={yearOptions} ariaLabel="Year" />
             <SelectField value={user} onChange={setUser} options={userOptions} ariaLabel="Paid by" />
+            <SelectField
+              value={limit}
+              onChange={setLimit}
+              options={["10", "25", "50"].map((n) => ({ value: n, label: `Show ${n}` }))}
+              ariaLabel="Number of results"
+            />
           </div>
         </div>
       </Panel>
@@ -196,6 +207,12 @@ function SearchView({ data }: { data: ExpenseDataset }) {
                   <span className="num shrink-0 text-sm font-semibold text-foreground">
                     {money(expense.amount)}
                   </span>
+                  <EditEntryButton
+                    expense={expense}
+                    categories={editCategories}
+                    users={data.users}
+                    onDone={setNotice}
+                  />
                   <DeleteEntryButton expense={expense} onDeleted={setNotice} />
                 </li>
               ))}
