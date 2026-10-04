@@ -379,6 +379,105 @@ export const deleteExpenseEntry = createServerFn({ method: "POST" })
     }
   });
 
+export type EditExpenseInput = DeleteExpenseInput & {
+  next: { amount: number; description: string; category: string; user: string; details: string };
+};
+
+export type EditExpenseResult =
+  | { status: "updated" }
+  | { status: "not_found"; message: string }
+  | { status: "error"; message: string };
+
+/**
+ * Edits one saved expense in place. The original row is found by matching
+ * every field (same as delete); only Amount, Description, Category, Person and
+ * Details are rewritten — the date and row position stay untouched.
+ */
+export const editExpenseEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: EditExpenseInput) => {
+    const amount = Number(input.next?.amount);
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter a valid amount");
+    const description = String(input.next?.description ?? "").trim();
+    if (!description) throw new Error("Description is required");
+    return {
+      sheet: String(input.sheet ?? "").trim(),
+      date: String(input.date ?? "").trim(),
+      amount: Number(input.amount),
+      description: String(input.description ?? "").trim(),
+      category: String(input.category ?? "").trim(),
+      user: String(input.user ?? "").trim(),
+      details: String(input.details ?? "").trim(),
+      next: {
+        amount,
+        description: description.slice(0, 300),
+        category: String(input.next?.category ?? "").trim().slice(0, 120) || "Uncategorized",
+        user: String(input.next?.user ?? "").trim().slice(0, 60) || "unknown",
+        details: String(input.next?.details ?? "").trim().slice(0, 300),
+      },
+    };
+  })
+  .handler(async ({ data, context }): Promise<EditExpenseResult> => {
+    const { a1, getRange, updateRange } = await import("./sheets.server");
+    const { invalidateExpenseCache } = await import("./expense-data.server");
+    const { normalizeLabel, parseAmount, parseDate, text } = await import("./expense-normalize");
+    const { removeFromSnapshot, appendToSnapshot } = await import("./snapshot.server");
+
+    try {
+      if (!data.sheet || !data.date || !Number.isFinite(data.amount)) {
+        return { status: "error", message: "That entry can't be identified." };
+      }
+      const spreadsheetId = await spreadsheetFor(context);
+      if (!spreadsheetId) {
+        return { status: "error", message: "Link your Google Sheet before editing entries." };
+      }
+
+      const rows = await getRange(spreadsheetId, a1(data.sheet, "A2:F"));
+      const index = rows.findIndex((row) => {
+        if (parseDate(row[0]) !== data.date) return false;
+        if (parseAmount(row[1]) !== data.amount) return false;
+        if (text(row[2]) !== data.description) return false;
+        if ((normalizeLabel(row[3]) || "Uncategorized") !== data.category) return false;
+        if ((text(row[4]) || "unknown") !== data.user) return false;
+        return text(row[5]) === data.details;
+      });
+      if (index === -1) {
+        return {
+          status: "not_found",
+          message: "That entry is no longer in your sheet — tap Sync to refresh.",
+        };
+      }
+
+      const rowNumber = index + 2;
+      const n = data.next;
+      await updateRange(spreadsheetId, a1(data.sheet, `B${rowNumber}:F${rowNumber}`), [
+        [n.amount, n.description, n.category, n.user, n.details],
+      ]);
+      invalidateExpenseCache(spreadsheetId);
+
+      await removeFromSnapshot(context.supabase, context.userId, spreadsheetId, {
+        kind: "expense",
+        date: data.date,
+        amount: data.amount,
+        description: data.description,
+        category: data.category,
+        user: data.user,
+        sheet: data.sheet,
+      });
+      await appendToSnapshot(context.supabase, context.userId, spreadsheetId, {
+        kind: "expense",
+        row: { date: data.date, sheet: data.sheet, ...n },
+      });
+
+      return { status: "updated" };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to edit expense:", message);
+      return { status: "error", message };
+    }
+  });
+
+
 
 export type AddInvestmentInput = {
   amount: number;
