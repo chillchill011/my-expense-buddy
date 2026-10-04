@@ -171,8 +171,8 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
       </form>
 
       <p className="mt-2 text-xs text-muted-foreground">
-        Type the amount first, then what it was for. Anything after a comma
-        is saved as extra details.
+        Type the amount first, then what it was for. Add amounts with +, e.g. 20+23+77 vegetables.
+        Anything after a comma is saved as extra details.
       </p>
 
       {error ? <p className="mt-2 text-xs font-medium text-destructive">{error}</p> : null}
