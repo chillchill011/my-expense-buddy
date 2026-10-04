@@ -22,13 +22,15 @@ export function parseEntry(input: string): ParseResult {
   const text = input.trim();
   if (!text) return { ok: false, message: "Type an amount and what it was for, e.g. 250 lunch" };
 
-  const match = /^(\S+)\s+([\s\S]+)$/.exec(text);
+  // Amount may be a sum like "20+23+77" or "20 + 23 + 77".
+  const match = /^(₹?[\d,.]+(?:\s*\+\s*₹?[\d,.]+)*)\s+([\s\S]+)$/.exec(text) ?? /^(\S+)\s+([\s\S]+)$/.exec(text);
   if (!match) {
     return { ok: false, message: "Add a short description after the amount, e.g. 250 lunch" };
   }
 
-  const amount = Number(match[1]!.replace(/[₹,]/g, ""));
-  if (!Number.isFinite(amount) || amount <= 0) {
+  const parts = match[1]!.split("+").map((p) => Number(p.trim().replace(/[₹,]/g, "")));
+  const amount = Math.round(parts.reduce((s, n) => s + n, 0) * 100) / 100;
+  if (parts.some((n) => !Number.isFinite(n) || n <= 0) || amount <= 0) {
     return { ok: false, message: "That doesn't look like an amount. Start with a number, e.g. 250 lunch" };
   }
 
