@@ -231,6 +231,66 @@ export const addExpense = createServerFn({ method: "POST" })
     }
   });
 
+export type AddExpensesResult =
+  | { status: "added"; tab: string; firstRow: number | null; count: number; createdTab?: boolean }
+  | { status: "error"; message: string };
+
+/** Appends several expenses to the current month's tab in one Sheets write. */
+export const addExpenses = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { entries: AddExpenseInput[] }) => {
+    const list = Array.isArray(input?.entries) ? input.entries : [];
+    if (list.length === 0) throw new Error("No entries to add");
+    if (list.length > 50) throw new Error("Add at most 50 entries at a time");
+    return {
+      entries: list.map((e) => {
+        const amount = Number(e.amount);
+        if (!Number.isFinite(amount) || amount <= 0) throw new Error("Invalid amount");
+        const description = String(e.description ?? "").trim();
+        if (!description) throw new Error("Missing description");
+        return {
+          amount,
+          description: description.slice(0, 300),
+          details: String(e.details ?? "").trim().slice(0, 300),
+          category: String(e.category ?? "").trim().slice(0, 120) || "Uncategorized",
+          user: String(e.user ?? "").trim().slice(0, 60) || "unknown",
+        } satisfies AddExpenseInput;
+      }),
+    };
+  })
+  .handler(async ({ data, context }): Promise<AddExpensesResult> => {
+    const { appendRows, ensureTab } = await import("./sheets.server");
+    const { invalidateExpenseCache } = await import("./expense-data.server");
+    const now = new Date();
+    const tab = monthTab(now);
+    try {
+      const spreadsheetId = await spreadsheetFor(context);
+      if (!spreadsheetId) {
+        return { status: "error", message: "Link your Google Sheet before adding entries." };
+      }
+      const createdTab = await ensureTab(spreadsheetId, tab, EXPENSE_HEADERS);
+      const firstRow = await appendRows(
+        spreadsheetId,
+        tab,
+        data.entries.map((e) => [dmy(now), e.amount, e.description, e.category, e.user, e.details]),
+      );
+      invalidateExpenseCache(spreadsheetId);
+
+      const { appendToSnapshot } = await import("./snapshot.server");
+      for (const e of data.entries) {
+        await appendToSnapshot(context.supabase, context.userId, spreadsheetId, {
+          kind: "expense",
+          row: { date: iso(now), ...e, sheet: tab },
+        });
+      }
+      return { status: "added", tab, firstRow, count: data.entries.length, createdTab };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to add expenses:", message);
+      return { status: "error", message };
+    }
+  });
+
 /**
  * Removes a row that was just appended. The row is re-read first and only
  * deleted when its amount and description still match, so a concurrent write

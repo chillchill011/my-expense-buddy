@@ -10,6 +10,7 @@ import type { ExpenseDataset } from "@/lib/expense-types";
 import { money, userLabel } from "@/lib/format";
 import { peopleWithMe, useEntryName } from "@/lib/use-entry-name";
 import { cn } from "@/lib/utils";
+import { BatchAdd } from "./BatchAdd";
 
 const USER_STORAGE_KEY = "expense-quick-add-user";
 
@@ -46,6 +47,7 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [pending, setPending] = useState<ParsedEntry | null>(null);
+  const [batch, setBatch] = useState(false);
 
   // Prefer the last person used on this device, else the signed-in person.
   useEffect(() => {
@@ -135,6 +137,46 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
 
   return (
     <section className="rounded-xl border border-border bg-card p-3 shadow-sm">
+      <div className="mb-2 flex items-center gap-2">
+        <div role="tablist" className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5 text-xs">
+          {[
+            { key: false, label: "Single" },
+            { key: true, label: "Batch" },
+          ].map((m) => (
+            <button
+              key={m.label}
+              type="button"
+              role="tab"
+              aria-selected={batch === m.key}
+              onClick={() => setBatch(m.key)}
+              className={cn(
+                "rounded-md px-2.5 py-1 font-medium transition-colors",
+                batch === m.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
+              )}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        {batch ? (
+          <select
+            aria-label="Paid by"
+            value={user}
+            onChange={(event) => chooseUser(event.target.value)}
+            className="ml-auto h-8 rounded-lg border border-input bg-background px-2 text-xs font-medium text-foreground"
+          >
+            {people.map((person) => (
+              <option key={person} value={person}>
+                {personLabel(person)}
+              </option>
+            ))}
+          </select>
+        ) : null}
+      </div>
+      {batch ? (
+        <BatchAdd data={data} user={user} />
+      ) : (
+      <>
       <form onSubmit={submit} className="flex flex-wrap items-center gap-2">
         <input
           ref={inputRef}
@@ -225,6 +267,8 @@ export function QuickAdd({ data }: { data: ExpenseDataset }) {
           ) : null}
         </div>
       ) : null}
+      </>
+      )}
     </section>
   );
 }

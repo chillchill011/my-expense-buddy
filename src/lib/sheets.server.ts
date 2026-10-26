@@ -206,6 +206,31 @@ export async function ensureTab(
  * Append one row to a tab. Returns the 1-based row number it landed on, so an
  * undo can remove exactly that row.
  */
+/**
+ * Append several rows in one request. Returns the 1-based row number of the
+ * first appended row (the rest follow consecutively), or null if unknown.
+ */
+export async function appendRows(
+  spreadsheetId: string,
+  tab: string,
+  rows: Array<Array<string | number>>,
+): Promise<number | null> {
+  const id = requireId(spreadsheetId);
+  const range = a1(tab, "A:F");
+  const payload = (await sheetsPost(
+    `/spreadsheets/${id}/values/${range}:append`,
+    new URLSearchParams({
+      valueInputOption: "USER_ENTERED",
+      insertDataOption: "INSERT_ROWS",
+    }),
+    { values: rows },
+  )) as { updates?: { updatedRange?: string } };
+
+  const updated = payload.updates?.updatedRange ?? "";
+  const match = /![A-Z]+(\d+)/.exec(updated);
+  return match ? Number(match[1]) : null;
+}
+
 export async function appendRow(
   spreadsheetId: string,
   tab: string,
