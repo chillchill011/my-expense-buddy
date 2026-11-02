@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { BudgetPanel } from "@/components/BudgetPanel";
-import { DataQualityNotice, SetupNotice } from "@/components/DashboardState";
+import { DataLoadError, DataQualityNotice, SetupNotice } from "@/components/DashboardState";
 import { SelectField } from "@/components/Filters";
 import { EmptyState, Panel, SectionHeading, UserSplit } from "@/components/Panels";
 import { QuickAdd } from "@/components/QuickAdd";

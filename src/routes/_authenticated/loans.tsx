@@ -13,7 +13,7 @@ import {
 
 import { AppShell } from "@/components/AppShell";
 import { LoanRepaymentAdd } from "@/components/LoanRepaymentAdd";
-import { SetupNotice } from "@/components/DashboardState";
+import { DataLoadError, SetupNotice } from "@/components/DashboardState";
 import {
   ChartTooltip,
   EmptyState,

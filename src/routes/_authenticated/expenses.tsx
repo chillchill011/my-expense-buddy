@@ -13,7 +13,7 @@ import {
 } from "recharts";
 
 import { AppShell } from "@/components/AppShell";
-import { SetupNotice } from "@/components/DashboardState";
+import { DataLoadError, SetupNotice } from "@/components/DashboardState";
 import { SelectField } from "@/components/Filters";
 import {
   ChartTooltip,

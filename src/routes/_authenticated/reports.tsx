@@ -21,7 +21,7 @@ import {
 import { Copy, RotateCcw } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
-import { SetupNotice } from "@/components/DashboardState";
+import { DataLoadError, SetupNotice } from "@/components/DashboardState";
 import { SelectField } from "@/components/Filters";
 import { ChartTooltip, EmptyState, Panel, RankedBars, SectionHeading } from "@/components/Panels";
 import { StatCard } from "@/components/StatCard";
