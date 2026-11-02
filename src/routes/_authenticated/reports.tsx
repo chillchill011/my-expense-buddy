@@ -190,10 +190,10 @@ function Reports({ data }: { data: ExpenseDataset }) {
       map.set(k, row);
     }
     return Array.from(map.values())
-      .sort((a, b) => (String(a.key) < String(b.key) ? -1 : 1))
+      .sort((a, b) => (String(a["key"]) < String(b["key"]) ? -1 : 1))
       .map((r) => ({
         ...r,
-        label: byYearMode ? r.key : MONTH_SHORT[Number(String(r.key).slice(5)) - 1],
+        label: byYearMode ? r["key"] : MONTH_SHORT[Number(String(r["key"]).slice(5)) - 1],
       }));
   }, [expenses, topCats, year]);
 
