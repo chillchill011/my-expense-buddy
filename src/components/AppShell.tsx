@@ -6,6 +6,7 @@ import {
   TrendingUp,
   Landmark,
   Search,
+  BarChart3,
   Settings,
   LogOut,
   UserRound,
@@ -47,6 +48,7 @@ const NAV = [
   { to: "/expenses", label: "Expenses", icon: ReceiptText },
   { to: "/investments", label: "Invest", icon: TrendingUp },
   { to: "/loans", label: "Loans", icon: Landmark },
+  { to: "/reports", label: "Reports", icon: BarChart3 },
 ] as const;
 
 function useSignOut() {
