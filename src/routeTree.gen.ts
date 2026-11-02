@@ -16,6 +16,7 @@ import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedInvestmentsRouteImport } from './routes/_authenticated/investments'
 import { Route as AuthenticatedLoansRouteImport } from './routes/_authenticated/loans'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
 import { Route as AuthenticatedSetupRouteImport } from './routes/_authenticated/setup'
 
@@ -54,6 +55,11 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/investments': typeof AuthenticatedInvestmentsRoute
   '/loans': typeof AuthenticatedLoansRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/search': typeof AuthenticatedSearchRoute
   '/setup': typeof AuthenticatedSetupRoute
 }
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/investments': typeof AuthenticatedInvestmentsRoute
   '/loans': typeof AuthenticatedLoansRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/search': typeof AuthenticatedSearchRoute
   '/setup': typeof AuthenticatedSetupRoute
   '/': typeof AuthenticatedIndexRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/_authenticated/investments': typeof AuthenticatedInvestmentsRoute
   '/_authenticated/loans': typeof AuthenticatedLoansRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/search': typeof AuthenticatedSearchRoute
   '/_authenticated/setup': typeof AuthenticatedSetupRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/investments'
     | '/loans'
     | '/profile'
+    | '/reports'
     | '/search'
     | '/setup'
   fileRoutesByTo: FileRoutesByTo
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/investments'
     | '/loans'
     | '/profile'
+    | '/reports'
     | '/search'
     | '/setup'
     | '/'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/_authenticated/investments'
     | '/_authenticated/loans'
     | '/_authenticated/profile'
+    | '/_authenticated/reports'
     | '/_authenticated/search'
     | '/_authenticated/setup'
     | '/_authenticated/'
@@ -187,6 +199,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/search': {
       id: '/_authenticated/search'
       path: '/search'
@@ -209,6 +228,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInvestmentsRoute: typeof AuthenticatedInvestmentsRoute
   AuthenticatedLoansRoute: typeof AuthenticatedLoansRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
   AuthenticatedSetupRoute: typeof AuthenticatedSetupRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -219,6 +239,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInvestmentsRoute: AuthenticatedInvestmentsRoute,
   AuthenticatedLoansRoute: AuthenticatedLoansRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSearchRoute: AuthenticatedSearchRoute,
   AuthenticatedSetupRoute: AuthenticatedSetupRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
