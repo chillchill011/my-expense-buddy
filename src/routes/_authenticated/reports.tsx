@@ -19,7 +19,6 @@ import {
   YAxis,
 } from "recharts";
 import { Copy, RotateCcw } from "lucide-react";
-import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { SetupNotice } from "@/components/DashboardState";
@@ -76,6 +75,7 @@ function Reports({ data }: { data: ExpenseDataset }) {
   const [month, setMonth] = useState("all");
   const [category, setCategory] = useState("all");
   const [user, setUser] = useState("all");
+  const [copied, setCopied] = useState("");
 
   const years = useMemo(() => {
     const set = new Set<number>();
@@ -267,9 +267,9 @@ function Reports({ data }: { data: ExpenseDataset }) {
     ];
     try {
       await navigator.clipboard.writeText(lines.join("\n"));
-      toast.success("Summary copied — paste it in WhatsApp");
+      setCopied("Copied — paste in WhatsApp");
     } catch {
-      toast.error("Couldn't copy on this device");
+      setCopied("Couldn't copy on this device");
     }
   };
 
@@ -331,7 +331,7 @@ function Reports({ data }: { data: ExpenseDataset }) {
             onClick={copySummary}
             className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            <Copy className="size-3.5" /> Copy summary
+            <Copy className="size-3.5" /> {copied || "Copy summary"}
           </button>
           {category !== "all" ? (
             <span className="self-center text-xs text-muted-foreground">
