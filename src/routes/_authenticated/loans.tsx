@@ -46,6 +46,7 @@ export const Route = createFileRoute("/_authenticated/loans")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  errorComponent: ({ error, reset }) => <DataLoadError error={error} reset={reset} />,
   component: LoansPage,
 });
 
