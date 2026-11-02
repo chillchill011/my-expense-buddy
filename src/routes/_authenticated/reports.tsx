@@ -566,7 +566,7 @@ function Donut({
             <span className="size-2.5 shrink-0 rounded-full" style={{ background: colorAt(i) }} />
             <span className="min-w-0 flex-1 truncate">{label(r.key)}</span>
             <span className="text-xs text-muted-foreground">{((r.total / total) * 100).toFixed(0)}%</span>
-            <span className="num w-20 text-right font-medium">{moneyCompact(r.total)}</span>
+            <span className="num shrink-0 text-right font-medium">{moneyCompact(r.total)}</span>
           </li>
         ))}
       </ul>
