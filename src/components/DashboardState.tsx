@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
 import { AlertTriangle, Clock, KeyRound, TriangleAlert } from "lucide-react";
 
@@ -53,6 +54,39 @@ export function SetupNotice({ result }: { result: DashboardResult }) {
           Connect a sheet
         </Link>
       ) : null}
+    </div>
+  );
+}
+
+/** Shown when the page's data request itself failed (e.g. a network blip). */
+export function DataLoadError({ error, reset }: { error: unknown; reset: () => void }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const message = error instanceof Error ? error.message : String(error);
+
+  return (
+    <div className="panel mx-auto max-w-xl p-6 text-center sm:p-8">
+      <div className="mx-auto flex size-11 items-center justify-center rounded-full bg-primary/12 text-primary">
+        <AlertTriangle className="size-5" />
+      </div>
+      <h1 className="mt-4 font-display text-lg font-semibold tracking-tight text-foreground">
+        Couldn't load your data
+      </h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        The connection dropped momentarily. Your entries are safe in the spreadsheet — try again.
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground/70">{message}</p>
+      <button
+        type="button"
+        onClick={async () => {
+          await queryClient.refetchQueries({ queryKey: ["expense-dashboard"] });
+          reset();
+          router.invalidate();
+        }}
+        className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+      >
+        Try again
+      </button>
     </div>
   );
 }

@@ -13,7 +13,7 @@ import {
 
 import { AppShell } from "@/components/AppShell";
 import { LoanRepaymentAdd } from "@/components/LoanRepaymentAdd";
-import { SetupNotice } from "@/components/DashboardState";
+import { DataLoadError, SetupNotice } from "@/components/DashboardState";
 import {
   ChartTooltip,
   EmptyState,
@@ -46,6 +46,7 @@ export const Route = createFileRoute("/_authenticated/loans")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  errorComponent: ({ error, reset }) => <DataLoadError error={error} reset={reset} />,
   component: LoansPage,
 });
 

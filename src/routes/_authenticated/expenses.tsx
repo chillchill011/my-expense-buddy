@@ -13,7 +13,7 @@ import {
 } from "recharts";
 
 import { AppShell } from "@/components/AppShell";
-import { SetupNotice } from "@/components/DashboardState";
+import { DataLoadError, SetupNotice } from "@/components/DashboardState";
 import { SelectField } from "@/components/Filters";
 import {
   ChartTooltip,
@@ -52,6 +52,7 @@ export const Route = createFileRoute("/_authenticated/expenses")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  errorComponent: ({ error, reset }) => <DataLoadError error={error} reset={reset} />,
   component: ExpensesPage,
 });
 

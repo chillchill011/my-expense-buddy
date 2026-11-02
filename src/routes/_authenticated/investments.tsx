@@ -13,7 +13,7 @@ import {
 } from "recharts";
 
 import { AppShell } from "@/components/AppShell";
-import { DataQualityNotice, SetupNotice } from "@/components/DashboardState";
+import { DataLoadError, DataQualityNotice, SetupNotice } from "@/components/DashboardState";
 import { SelectField } from "@/components/Filters";
 import { InvestmentAdd } from "@/components/InvestmentAdd";
 import {
@@ -49,6 +49,7 @@ export const Route = createFileRoute("/_authenticated/investments")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  errorComponent: ({ error, reset }) => <DataLoadError error={error} reset={reset} />,
   component: InvestmentsPage,
 });
 

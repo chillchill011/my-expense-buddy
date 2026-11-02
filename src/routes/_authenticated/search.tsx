@@ -4,7 +4,7 @@ import { Search as SearchIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
-import { SetupNotice } from "@/components/DashboardState";
+import { DataLoadError, SetupNotice } from "@/components/DashboardState";
 import { DeleteEntryButton } from "@/components/DeleteEntryButton";
 import { EditEntryButton } from "@/components/EditEntryDialog";
 import { SelectField } from "@/components/Filters";
@@ -35,6 +35,7 @@ export const Route = createFileRoute("/_authenticated/search")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  errorComponent: ({ error, reset }) => <DataLoadError error={error} reset={reset} />,
   component: SearchPage,
 });
 
