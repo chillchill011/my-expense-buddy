@@ -457,7 +457,7 @@ function Reports({ data }: { data: ExpenseDataset }) {
         </div>
       </Panel>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div data-pdf-block className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard label="Total spends" value={money(spent)} hint={`${expenses.length} entries`} />
         <StatCard label="Loan paid" value={money(loanPaid)} hint={`${loans.length} payments`} />
         <StatCard label="Total outflow" value={money(outflow)} tone="negative" hint="Spends + loans" />
