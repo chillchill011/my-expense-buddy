@@ -365,8 +365,8 @@ function Reports({ data }: { data: ExpenseDataset }) {
           y = margin;
         }
         doc.addImage(
-          canvas.toDataURL("image/png"),
-          "PNG",
+          canvas.toDataURL("image/jpeg", 0.9),
+          "JPEG",
           margin + (contentW - w) / 2,
           y,
           w,
