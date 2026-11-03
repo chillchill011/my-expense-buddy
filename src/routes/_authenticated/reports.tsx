@@ -2,8 +2,6 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
-  Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -18,7 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Copy, RotateCcw } from "lucide-react";
+import { Copy, FileDown, RotateCcw } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { DataLoadError, SetupNotice } from "@/components/DashboardState";
@@ -72,11 +70,14 @@ const axisProps = {
 } as const;
 
 function Reports({ data }: { data: ExpenseDataset }) {
-  const [year, setYear] = useState("all");
-  const [month, setMonth] = useState("all");
+  const [year, setYear] = useState(() => String(new Date().getFullYear()));
+  const [month, setMonth] = useState(() =>
+    String(new Date().getMonth() + 1).padStart(2, "0"),
+  );
   const [category, setCategory] = useState("all");
   const [user, setUser] = useState("all");
   const [copied, setCopied] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   const years = useMemo(() => {
     const set = new Set<number>();
@@ -246,8 +247,8 @@ function Reports({ data }: { data: ExpenseDataset }) {
   );
 
   const reset = () => {
-    setYear("all");
-    setMonth("all");
+    setYear(String(new Date().getFullYear()));
+    setMonth(String(new Date().getMonth() + 1).padStart(2, "0"));
     setCategory("all");
     setUser("all");
   };
@@ -271,6 +272,78 @@ function Reports({ data }: { data: ExpenseDataset }) {
       setCopied("Copied — paste in WhatsApp");
     } catch {
       setCopied("Couldn't copy on this device");
+    }
+  };
+
+  const downloadPdf = async () => {
+    if (exporting) return;
+    setExporting(true);
+    setCopied("");
+    try {
+      const [{ jsPDF }, { default: html2canvas }] = await Promise.all([
+        import("jspdf"),
+        import("html2canvas-pro"),
+      ]);
+      const bg = getComputedStyle(document.body).backgroundColor;
+      const rgb = (bg.match(/\d+/g) ?? []).slice(0, 3).map(Number);
+      const [r, g, b] = rgb.length === 3 ? rgb : [255, 255, 255];
+      const dark = r * 0.299 + g * 0.587 + b * 0.114 < 140;
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const margin = 10;
+      const contentW = pageW - margin * 2;
+      const maxH = pageH - margin * 2;
+      const paint = () => {
+        doc.setFillColor(r, g, b);
+        doc.rect(0, 0, pageW, pageH, "F");
+      };
+      paint();
+      doc.setTextColor(dark ? 240 : 20);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      doc.text(`Rupeeflow report — ${periodLabel}`, margin, margin + 5);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(
+        `Spends ${money(spent)} · Loans ${money(loanPaid)} · Invested ${money(invested)} · Outflow ${money(outflow)}`,
+        margin,
+        margin + 11,
+      );
+      let y = margin + 17;
+      const blocks = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-pdf-block], .pdf-block"),
+      );
+      for (const el of blocks) {
+        const canvas = await html2canvas(el, { scale: 2, backgroundColor: bg });
+        const ratio = canvas.height / canvas.width;
+        let w = contentW;
+        let h = w * ratio;
+        if (h > maxH) {
+          h = maxH;
+          w = h / ratio;
+        }
+        if (y + h > pageH - margin) {
+          doc.addPage();
+          paint();
+          y = margin;
+        }
+        doc.addImage(
+          canvas.toDataURL("image/png"),
+          "PNG",
+          margin + (contentW - w) / 2,
+          y,
+          w,
+          h,
+        );
+        y += h + 6;
+      }
+      const slug = periodLabel.replace(/[^\w]+/g, "-").replace(/^-+|-+$/g, "");
+      doc.save(`rupeeflow-report-${slug}.pdf`);
+    } catch {
+      setCopied("Couldn't build the PDF on this device");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -333,6 +406,14 @@ function Reports({ data }: { data: ExpenseDataset }) {
             className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
           >
             <Copy className="size-3.5" /> {copied || "Copy summary"}
+          </button>
+          <button
+            type="button"
+            onClick={downloadPdf}
+            disabled={exporting}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-60"
+          >
+            <FileDown className="size-3.5" /> {exporting ? "Making PDF…" : "Download PDF"}
           </button>
           {category !== "all" ? (
             <span className="self-center text-xs text-muted-foreground">

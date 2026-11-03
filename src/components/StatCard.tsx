@@ -36,7 +36,7 @@ export function StatCard({
           </p>
           {icon ? <span className="text-muted-foreground">{icon}</span> : null}
         </div>
-        <p className={cn("num mt-2.5 text-2xl font-semibold sm:text-[1.7rem]", valueTone)}>{value}</p>
+        <p className={cn("num mt-2.5 text-xl font-semibold sm:text-[1.7rem]", valueTone)}>{value}</p>
         {hint ? <div className="mt-1.5 text-xs text-muted-foreground">{hint}</div> : null}
       </div>
     </div>
