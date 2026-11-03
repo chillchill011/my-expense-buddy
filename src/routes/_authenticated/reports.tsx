@@ -320,7 +320,9 @@ function Reports({ data }: { data: ExpenseDataset }) {
       ]);
       const bg = getComputedStyle(document.body).backgroundColor;
       const rgb = (bg.match(/\d+/g) ?? []).slice(0, 3).map(Number);
-      const [r, g, b] = rgb.length === 3 ? rgb : [255, 255, 255];
+      const r = rgb[0] ?? 255;
+      const g = rgb[1] ?? 255;
+      const b = rgb[2] ?? 255;
       const dark = r * 0.299 + g * 0.587 + b * 0.114 < 140;
       const doc = new jsPDF({ unit: "mm", format: "a4" });
       const pageW = doc.internal.pageSize.getWidth();
