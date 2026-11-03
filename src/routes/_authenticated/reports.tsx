@@ -183,33 +183,67 @@ function Reports({ data }: { data: ExpenseDataset }) {
   const topCats = catSpend.slice(0, 5).map((c) => c.key);
   const categoryTrend = useMemo(() => {
     const byYearMode = year === "all";
+    const byDayMode = month !== "all";
+    const keys = [...topCats, "Other"];
     const map = new Map<string, Record<string, number | string>>();
+    const ensure = (k: string, label: string) => {
+      const existing = map.get(k);
+      if (existing) return existing;
+      const row: Record<string, number | string> = { key: k, label };
+      for (const c of keys) row[c] = 0;
+      map.set(k, row);
+      return row;
+    };
+    if (byDayMode) {
+      const days = new Date(Number(year), Number(month), 0).getDate();
+      for (let d = 1; d <= days; d++) ensure(String(d), String(d));
+    } else if (!byYearMode) {
+      MONTH_SHORT.forEach((m, i) => ensure(`${year}-${String(i + 1).padStart(2, "0")}`, m));
+    }
     for (const e of expenses) {
-      const k = byYearMode ? e.date.slice(0, 4) : e.date.slice(0, 7);
-      const row = map.get(k) ?? { key: k };
+      const k = byDayMode
+        ? e.date.slice(8, 10)
+        : byYearMode
+          ? e.date.slice(0, 4)
+          : e.date.slice(0, 7);
+      const label = byDayMode
+        ? String(Number(k))
+        : byYearMode
+          ? k
+          : (MONTH_SHORT[Number(k.slice(5)) - 1] ?? k);
+      const row = ensure(k, label);
       const c = topCats.includes(e.category) ? e.category : "Other";
       row[c] = ((row[c] as number) ?? 0) + e.amount;
-      map.set(k, row);
     }
-    return Array.from(map.values())
-      .sort((a, b) => (String(a["key"]) < String(b["key"]) ? -1 : 1))
-      .map((r) => ({
-        ...r,
-        label: byYearMode ? r["key"] : MONTH_SHORT[Number(String(r["key"]).slice(5)) - 1],
-      }));
-  }, [expenses, topCats, year]);
+    const rows = Array.from(map.values()).sort((a, b) =>
+      String(a["key"]) < String(b["key"]) ? -1 : 1,
+    );
+    const title = byDayMode
+      ? `Category spends by day · ${MONTH_SHORT[Number(month) - 1]} ${year}`
+      : byYearMode
+        ? "Category spends over the years"
+        : "Category spends by month";
+    return { keys, rows, title };
+  }, [expenses, topCats, year, month]);
 
+  // Year vs year: last 3 years of spending, independent of the month filter.
   const yoy = useMemo(() => {
-    const ys = Array.from(new Set(expenses.map((e) => e.date.slice(0, 4)))).sort().slice(-4);
+    const allYears = data.expenses.map((e) => yearOf(e.date));
+    const anchor = Math.max(new Date().getFullYear(), ...allYears, 0);
+    const present = new Set(allYears.map(String));
+    const ys = [anchor - 2, anchor - 1, anchor]
+      .map(String)
+      .filter((y) => present.has(y))
+      .sort();
     const rows = MONTH_SHORT.map((m) => ({ label: m }) as Record<string, number | string>);
-    for (const e of expenses) {
+    for (const e of data.expenses) {
       const y = e.date.slice(0, 4);
       if (!ys.includes(y)) continue;
       const r = rows[Number(e.date.slice(5, 7)) - 1];
       if (r) r[y] = ((r[y] as number) ?? 0) + e.amount;
     }
     return { years: ys, rows };
-  }, [expenses]);
+  }, [data.expenses]);
 
   const dayOfMonth = useMemo(() => {
     const arr = Array.from({ length: 31 }, (_, i) => ({ day: String(i + 1), total: 0 }));
@@ -441,10 +475,6 @@ function Reports({ data }: { data: ExpenseDataset }) {
         <EmptyState message="No data for these filters. Try Reset." />
       ) : (
         <>
-          <h2 className="pt-2 text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Basic
-          </h2>
-
           <ChartPanel title={year === "all" ? "Money flow by year" : "Money flow by month"}>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={trend}>
@@ -475,9 +505,6 @@ function Reports({ data }: { data: ExpenseDataset }) {
             </ChartPanel>
           </div>
 
-          <h2 className="pt-4 text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Advanced
-          </h2>
 
           <ChartPanel title="Who spends on what (top 10 categories)">
             {userCategory.length ? (
@@ -498,31 +525,35 @@ function Reports({ data }: { data: ExpenseDataset }) {
             )}
           </ChartPanel>
 
-          <ChartPanel title="Top categories over time">
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={categoryTrend}>
-                <CartesianGrid vertical={false} stroke="var(--color-border)" />
-                <XAxis dataKey="label" {...axisProps} />
-                <YAxis {...axisProps} tickFormatter={moneyCompact} width={52} />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                {[...topCats, "Other"].map((c, i) => (
-                  <Area
-                    key={c}
-                    type="monotone"
-                    dataKey={c}
-                    stackId="c"
-                    stroke={colorAt(i)}
-                    fill={colorAt(i)}
-                    fillOpacity={0.35}
-                  />
-                ))}
-              </AreaChart>
-            </ResponsiveContainer>
+          <ChartPanel title={categoryTrend.title}>
+            {categoryTrend.rows.length ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={categoryTrend.rows}>
+                  <CartesianGrid vertical={false} stroke="var(--color-border)" />
+                  <XAxis dataKey="label" {...axisProps} />
+                  <YAxis {...axisProps} tickFormatter={moneyCompact} width={52} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  {categoryTrend.keys.map((c, i) => (
+                    <Line
+                      key={c}
+                      type="monotone"
+                      dataKey={c}
+                      stroke={colorAt(i)}
+                      strokeWidth={2}
+                      dot={categoryTrend.rows.length <= 12}
+                      connectNulls
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <EmptyState message="No spends here." />
+            )}
           </ChartPanel>
 
           {yoy.years.length > 1 ? (
-            <ChartPanel title="Year vs year spends">
+            <ChartPanel title="Year vs year spends (last 3 years)">
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={yoy.rows}>
                   <CartesianGrid vertical={false} stroke="var(--color-border)" />
@@ -595,7 +626,7 @@ function Reports({ data }: { data: ExpenseDataset }) {
 
 function ChartPanel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Panel>
+    <Panel className="pdf-block">
       <h3 className="mb-3 text-sm font-semibold">{title}</h3>
       {children}
     </Panel>
