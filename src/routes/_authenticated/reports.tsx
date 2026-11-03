@@ -196,7 +196,8 @@ function Reports({ data }: { data: ExpenseDataset }) {
     };
     if (byDayMode) {
       const days = new Date(Number(year), Number(month), 0).getDate();
-      for (let d = 1; d <= days; d++) ensure(String(d), String(d));
+      for (let d = 1; d <= days; d++)
+        ensure(String(d).padStart(2, "0"), String(d));
     } else if (!byYearMode) {
       MONTH_SHORT.forEach((m, i) => ensure(`${year}-${String(i + 1).padStart(2, "0")}`, m));
     }
@@ -318,12 +319,7 @@ function Reports({ data }: { data: ExpenseDataset }) {
         import("jspdf"),
         import("html2canvas-pro"),
       ]);
-      const bg = getComputedStyle(document.body).backgroundColor;
-      const rgb = (bg.match(/\d+/g) ?? []).slice(0, 3).map(Number);
-      const r = rgb[0] ?? 255;
-      const g = rgb[1] ?? 255;
-      const b = rgb[2] ?? 255;
-      const dark = r * 0.299 + g * 0.587 + b * 0.114 < 140;
+      const bg = "#ffffff";
       const doc = new jsPDF({ unit: "mm", format: "a4" });
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
@@ -331,11 +327,11 @@ function Reports({ data }: { data: ExpenseDataset }) {
       const contentW = pageW - margin * 2;
       const maxH = pageH - margin * 2;
       const paint = () => {
-        doc.setFillColor(r, g, b);
+        doc.setFillColor(255, 255, 255);
         doc.rect(0, 0, pageW, pageH, "F");
       };
       paint();
-      doc.setTextColor(dark ? 240 : 20);
+      doc.setTextColor(25);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(15);
       doc.text(`Rupeeflow report — ${periodLabel}`, margin, margin + 5);
