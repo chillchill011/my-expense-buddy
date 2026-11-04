@@ -381,8 +381,8 @@ function Reports({ data }: { data: ExpenseDataset }) {
         const slug = periodLabel.replace(/[^\w]+/g, "-").replace(/^-+|-+$/g, "");
         doc.save(`rupeeflow-report-${slug}.pdf`);
       } finally {
-        if (wasDark) root.classList.add("dark");
-        if (!wasLight && !wasDark) root.classList.remove("light");
+        root.classList.toggle("dark", wasDark);
+        root.classList.toggle("light", wasLight);
       }
     } catch {
       setCopied("Couldn't build the PDF on this device");
