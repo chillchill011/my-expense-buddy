@@ -7,6 +7,7 @@ import {
   Landmark,
   Search,
   BarChart3,
+  CalendarRange,
   Settings,
   LogOut,
   UserRound,
@@ -49,6 +50,7 @@ const NAV = [
   { to: "/investments", label: "Invest", icon: TrendingUp },
   { to: "/loans", label: "Loans", icon: Landmark },
   { to: "/reports", label: "Reports", icon: BarChart3 },
+  { to: "/yearly", label: "Yearly", icon: CalendarRange },
 ] as const;
 
 function useSignOut() {
