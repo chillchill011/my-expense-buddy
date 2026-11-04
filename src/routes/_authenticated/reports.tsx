@@ -342,12 +342,20 @@ function Reports({ data }: { data: ExpenseDataset }) {
         margin,
         margin + 11,
       );
-      let y = margin + 17;
-      const blocks = Array.from(
-        document.querySelectorAll<HTMLElement>("[data-pdf-block], .pdf-block"),
-      );
-      for (const el of blocks) {
-        const canvas = await html2canvas(el, { scale: 2, backgroundColor: bg });
+      // Charts are captured in light theme regardless of the app's current theme.
+      const root = document.documentElement;
+      const wasDark = root.classList.contains("dark");
+      const wasLight = root.classList.contains("light");
+      root.classList.remove("dark");
+      root.classList.add("light");
+      try {
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        let y = margin + 17;
+        const blocks = Array.from(
+          document.querySelectorAll<HTMLElement>("[data-pdf-block], .pdf-block"),
+        );
+        for (const el of blocks) {
+          const canvas = await html2canvas(el, { scale: 2, backgroundColor: bg });
         const ratio = canvas.height / canvas.width;
         let w = contentW;
         let h = w * ratio;
@@ -369,9 +377,13 @@ function Reports({ data }: { data: ExpenseDataset }) {
           h,
         );
         y += h + 6;
+        }
+        const slug = periodLabel.replace(/[^\w]+/g, "-").replace(/^-+|-+$/g, "");
+        doc.save(`rupeeflow-report-${slug}.pdf`);
+      } finally {
+        root.classList.toggle("dark", wasDark);
+        root.classList.toggle("light", wasLight);
       }
-      const slug = periodLabel.replace(/[^\w]+/g, "-").replace(/^-+|-+$/g, "");
-      doc.save(`rupeeflow-report-${slug}.pdf`);
     } catch {
       setCopied("Couldn't build the PDF on this device");
     } finally {
