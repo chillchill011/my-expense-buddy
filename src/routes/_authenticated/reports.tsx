@@ -377,9 +377,13 @@ function Reports({ data }: { data: ExpenseDataset }) {
           h,
         );
         y += h + 6;
+        }
+        const slug = periodLabel.replace(/[^\w]+/g, "-").replace(/^-+|-+$/g, "");
+        doc.save(`rupeeflow-report-${slug}.pdf`);
+      } finally {
+        if (wasDark) root.classList.add("dark");
+        if (!wasLight && !wasDark) root.classList.remove("light");
       }
-      const slug = periodLabel.replace(/[^\w]+/g, "-").replace(/^-+|-+$/g, "");
-      doc.save(`rupeeflow-report-${slug}.pdf`);
     } catch {
       setCopied("Couldn't build the PDF on this device");
     } finally {
