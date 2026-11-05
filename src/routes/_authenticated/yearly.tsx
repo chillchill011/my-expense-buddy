@@ -180,7 +180,8 @@ function Yearly({ data }: { data: ExpenseDataset }) {
     if (!y || !yearSet.has(y)) continue;
     const mi = Number(e.date.slice(5, 7)) - 1;
     if (mi < 0 || mi > 11) continue;
-    seasonRows[mi][String(y)] = ((seasonRows[mi][String(y)] as number) ?? 0) + e.amount;
+    const row = seasonRows[mi]!;
+    row[String(y)] = ((row[String(y)] as number) ?? 0) + e.amount;
   }
 
   // Member split per year
