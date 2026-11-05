@@ -6,6 +6,9 @@ import {
   BarChart,
   CartesianGrid,
   Legend,
+  Line,
+  LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -143,6 +146,69 @@ function Yearly({ data }: { data: ExpenseDataset }) {
     null,
   );
 
+  const years = rows.map((r) => r.year);
+  const yearSet = new Set(years);
+  const lastYear = years[years.length - 1];
+  const prevYear = years.length > 1 ? years[years.length - 2] : null;
+
+  // Category shifts: last year vs previous year in range
+  const catShifts = (() => {
+    if (prevYear === null) return [];
+    const m = new Map<string, { prev: number; cur: number }>();
+    for (const e of data.expenses) {
+      const y = yearOf(e.date);
+      if (y !== lastYear && y !== prevYear) continue;
+      const c = e.category || "Uncategorised";
+      const t = m.get(c) ?? { prev: 0, cur: 0 };
+      if (y === lastYear) t.cur += e.amount;
+      else t.prev += e.amount;
+      m.set(c, t);
+    }
+    return [...m.entries()]
+      .map(([category, t]) => ({ category, ...t, diff: t.cur - t.prev, pct: t.prev > 0 ? ((t.cur - t.prev) / t.prev) * 100 : null }))
+      .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
+      .slice(0, 10);
+  })();
+
+  const rateRows = rows.map((r) => ({ key: r.key, "Invest %": Number(r.rate.toFixed(1)) }));
+
+  // Seasonality: Jan–Dec per year (spends)
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const seasonRows = MONTHS.map((label) => ({ key: label } as Record<string, number | string>));
+  for (const e of data.expenses) {
+    const y = yearOf(e.date);
+    if (!y || !yearSet.has(y)) continue;
+    const mi = Number(e.date.slice(5, 7)) - 1;
+    if (mi < 0 || mi > 11) continue;
+    seasonRows[mi][String(y)] = ((seasonRows[mi][String(y)] as number) ?? 0) + e.amount;
+  }
+
+  // Member split per year
+  const members = new Set<string>();
+  const memberMap = new Map<number, Record<string, number>>();
+  const addMember = (date: string, user: string, amount: number, kind: string) => {
+    const y = yearOf(date);
+    if (!y || !yearSet.has(y)) return;
+    const name = user || "Unknown";
+    members.add(name);
+    const r = memberMap.get(y) ?? {};
+    r[`${name} · ${kind}`] = (r[`${name} · ${kind}`] ?? 0) + amount;
+    memberMap.set(y, r);
+  };
+  data.expenses.forEach((e) => addMember(e.date, e.user, e.amount, "spends"));
+  data.investments.forEach((i) => addMember(i.date, i.user, i.amount, "invested"));
+  const memberList = [...members].sort();
+  const memberRows = years.map((y) => ({ key: String(y), ...(memberMap.get(y) ?? {}) }));
+
+  // Biggest one-off spends per year
+  const outliers = [...years].reverse().map((y) => ({
+    year: y,
+    items: data.expenses
+      .filter((e) => yearOf(e.date) === y)
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 3),
+  })).filter((g) => g.items.length);
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -251,6 +317,120 @@ function Yearly({ data }: { data: ExpenseDataset }) {
                 <Bar dataKey="Invested" stackId="a" fill={colorAt(1)} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          ) : (
+            <EmptyState message="No entries in this time range." />
+          )}
+        </Panel>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Panel>
+          <SectionHeading
+            title="Category shifts"
+            description={prevYear ? `Biggest changes, ${prevYear} → ${lastYear}` : "Needs 2+ years in the range"}
+          />
+          {catShifts.length ? (
+            <ul className="divide-y divide-border/60 text-sm">
+              {catShifts.map((c) => (
+                <li key={c.category} className="flex items-center justify-between gap-3 py-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{c.category}</p>
+                    <p className="num text-xs text-muted-foreground">
+                      {moneyCompact(c.prev)} → {moneyCompact(c.cur)}
+                    </p>
+                  </div>
+                  <span className={cn("num shrink-0 font-semibold", c.diff > 0 ? "text-destructive" : "text-positive")}>
+                    {c.diff > 0 ? "▲ +" : "▼ "}
+                    {c.pct === null ? "new" : `${c.pct.toFixed(0)}%`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState message="Pick a range with at least 2 years of spends." />
+          )}
+        </Panel>
+        <Panel>
+          <SectionHeading title="Investment rate trend" description="Share of money invested each year (dashed line = 30% goal)." />
+          {hasData ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={rateRows}>
+                <CartesianGrid vertical={false} stroke="var(--color-border)" />
+                <XAxis dataKey="key" {...axisProps} />
+                <YAxis {...axisProps} tickFormatter={(v) => `${v}%`} width={44} />
+                <Tooltip cursor={{ stroke: "var(--color-border)" }} formatter={(v) => `${v}%`} />
+                <ReferenceLine y={30} stroke="var(--color-muted-foreground)" strokeDasharray="4 4" />
+                <Line type="monotone" dataKey="Invest %" stroke={colorAt(1)} strokeWidth={2.5} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <EmptyState message="No entries in this time range." />
+          )}
+        </Panel>
+      </div>
+
+      <Panel>
+        <SectionHeading title="Month-by-month spends" description="Each year as a line — spot festival, travel or renewal months." />
+        {hasData ? (
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={seasonRows}>
+              <CartesianGrid vertical={false} stroke="var(--color-border)" />
+              <XAxis dataKey="key" {...axisProps} />
+              <YAxis {...axisProps} tickFormatter={(v) => moneyCompact(Number(v))} width={56} />
+              <Tooltip content={<ChartTooltip />} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              {years.map((y, i) => (
+                <Line key={y} type="monotone" dataKey={String(y)} stroke={colorAt(i)} strokeWidth={y === lastYear ? 3 : 1.5} dot={false} connectNulls />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <EmptyState message="No entries in this time range." />
+        )}
+      </Panel>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Panel>
+          <SectionHeading title="Who spent & invested" description="Each person's yearly spends and investments." />
+          {memberList.length ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={memberRows}>
+                <CartesianGrid vertical={false} stroke="var(--color-border)" />
+                <XAxis dataKey="key" {...axisProps} />
+                <YAxis {...axisProps} tickFormatter={(v) => moneyCompact(Number(v))} width={56} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: "var(--color-muted)" }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                {memberList.flatMap((m, i) => [
+                  <Bar key={`${m}s`} dataKey={`${m} · spends`} stackId="s" fill={colorAt(i * 2)} />,
+                  <Bar key={`${m}i`} dataKey={`${m} · invested`} stackId="i" fill={colorAt(i * 2 + 1)} />,
+                ])}
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <EmptyState message="No entries in this time range." />
+          )}
+        </Panel>
+        <Panel>
+          <SectionHeading title="Biggest one-off spends" description="Top 3 single expenses each year." />
+          {outliers.length ? (
+            <div className="space-y-3 text-sm">
+              {outliers.map((g) => (
+                <div key={g.year}>
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{g.year}</p>
+                  <ul className="divide-y divide-border/60">
+                    {g.items.map((e, i) => (
+                      <li key={i} className="flex items-center justify-between gap-3 py-1.5">
+                        <div className="min-w-0">
+                          <p className="truncate">{e.description || e.category}</p>
+                          <p className="text-xs text-muted-foreground">{e.date} · {e.category} · {e.user}</p>
+                        </div>
+                        <span className="num shrink-0 font-semibold">{money(e.amount)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           ) : (
             <EmptyState message="No entries in this time range." />
           )}
