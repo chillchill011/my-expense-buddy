@@ -16,5 +16,6 @@
 - [x] Database cache of the sheet + one-tap "Sync from Sheets" (auto-check after 15 min)
 - [x] Beginner-friendly README: how the code works, backups, hosting, migration away from Lovable
 - [x] Edit budgets for any month (history pencil) + budget card on Expenses
+- [ ] Add Earnings with Google Sheets as the master record, a fast local snapshot, Overview entry, and Reports/Yearly comparisons
 - [ ] Publish a public view-only template sheet and set VITE_TEMPLATE_SHEET_ID
 - [ ] Later: edit/delete older entries
