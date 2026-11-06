@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep new finance record types inside the existing JSON snapshot dataset unless a clear query or access requirement needs separate tables; this preserves the current Sheets-master/cache model without duplicating persistence structures.
