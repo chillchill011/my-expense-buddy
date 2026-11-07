@@ -12,14 +12,15 @@ export const DEFAULT_EARNING_CATEGORIES = [
   "Other",
 ] as const;
 
-export function withEarningsDefaults<T extends Record<string, unknown>>(
+export function withEarningsDefaults<T extends object>(
   dataset: T,
 ): T & { earnings: Earning[]; earningCategories: string[] } {
+  const source = dataset as T & { earnings?: unknown; earningCategories?: unknown };
   return {
     ...dataset,
-    earnings: Array.isArray(dataset.earnings) ? (dataset.earnings as Earning[]) : [],
-    earningCategories: Array.isArray(dataset.earningCategories)
-      ? (dataset.earningCategories as string[])
+    earnings: Array.isArray(source.earnings) ? (source.earnings as Earning[]) : [],
+    earningCategories: Array.isArray(source.earningCategories)
+      ? (source.earningCategories as string[])
       : [],
   };
 }

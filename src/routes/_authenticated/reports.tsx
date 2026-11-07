@@ -81,7 +81,7 @@ function Reports({ data }: { data: ExpenseDataset }) {
 
   const years = useMemo(() => {
     const set = new Set<number>();
-    for (const r of [...data.expenses, ...data.investments, ...data.loanRepayments])
+    for (const r of [...data.expenses, ...data.investments, ...data.loanRepayments, ...data.earnings])
       set.add(yearOf(r.date));
     return Array.from(set).sort((a, b) => b - a);
   }, [data]);
@@ -91,7 +91,7 @@ function Reports({ data }: { data: ExpenseDataset }) {
   );
   const users = useMemo(() => {
     const set = new Set<string>();
-    for (const r of [...data.expenses, ...data.investments, ...data.loanRepayments])
+    for (const r of [...data.expenses, ...data.investments, ...data.loanRepayments, ...data.earnings])
       if (r.user) set.add(r.user);
     return Array.from(set).sort();
   }, [data]);
@@ -121,10 +121,16 @@ function Reports({ data }: { data: ExpenseDataset }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data.loanRepayments, year, month, user],
   );
+  const earnings = useMemo(
+    () => data.earnings.filter((earning) => matchDate(earning.date) && matchUser(earning.user)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.earnings, year, month, user],
+  );
 
   const spent = sum(expenses);
   const invested = sum(investments);
   const loanPaid = sum(loans);
+  const earned = sum(earnings);
   const outflow = spent + loanPaid;
   const investRate = invested + outflow > 0 ? (invested / (invested + outflow)) * 100 : 0;
   const periodLabel =
@@ -135,35 +141,38 @@ function Reports({ data }: { data: ExpenseDataset }) {
   // Trend: monthly when a year is chosen, yearly otherwise.
   const trend = useMemo(() => {
     const byYearMode = year === "all";
-    const map = new Map<string, { key: string; Spends: number; Invested: number; Loans: number }>();
+    const map = new Map<string, { key: string; Spends: number; Invested: number; Loans: number; Earnings: number }>();
     if (!byYearMode)
       MONTH_SHORT.forEach((_, i) => {
         const k = `${year}-${String(i + 1).padStart(2, "0")}`;
         if (month === "all" || k.slice(5) === month)
-          map.set(k, { key: k, Spends: 0, Invested: 0, Loans: 0 });
+          map.set(k, { key: k, Spends: 0, Invested: 0, Loans: 0, Earnings: 0 });
       });
     const keyOf = (d: string) => (byYearMode ? d.slice(0, 4) : d.slice(0, 7));
-    const add = (d: string, field: "Spends" | "Invested" | "Loans", amt: number) => {
+    const add = (d: string, field: "Spends" | "Invested" | "Loans" | "Earnings", amt: number) => {
       const k = keyOf(d);
-      const row = map.get(k) ?? { key: k, Spends: 0, Invested: 0, Loans: 0 };
+      const row = map.get(k) ?? { key: k, Spends: 0, Invested: 0, Loans: 0, Earnings: 0 };
       row[field] += amt;
       map.set(k, row);
     };
     expenses.forEach((e) => add(e.date, "Spends", e.amount));
     investments.forEach((i) => add(i.date, "Invested", i.amount));
     loans.forEach((l) => add(l.date, "Loans", l.amount));
+    earnings.forEach((earning) => add(earning.date, "Earnings", earning.amount));
     return Array.from(map.values())
       .sort((a, b) => (a.key < b.key ? -1 : 1))
       .map((r) => ({
         ...r,
         label: byYearMode ? r.key : (MONTH_SHORT[Number(r.key.slice(5)) - 1] ?? r.key),
       }));
-  }, [expenses, investments, loans, year, month]);
+  }, [expenses, investments, loans, earnings, year, month]);
 
   const userSpend = byUser(expenses);
   const catSpend = byCategory(expenses);
   const invCats = byCategory(investments);
   const loanBuckets = byLoan(loans);
+  const earningCats = byCategory(earnings);
+  const earningUsers = byUser(earnings);
 
   // Phase 2 data
   const spendUsers = userSpend.map((u) => u.key);
@@ -295,6 +304,7 @@ function Reports({ data }: { data: ExpenseDataset }) {
       `Loan payments: ${money(loanPaid)}`,
       `Total outflow: ${money(outflow)}`,
       `Invested: ${money(invested)}`,
+      `Earnings: ${money(earned)}`,
       "",
       "Top categories:",
       ...catSpend.slice(0, 5).map((c, i) => `${i + 1}. ${c.key} — ${money(c.total)}`),
@@ -338,7 +348,7 @@ function Reports({ data }: { data: ExpenseDataset }) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.text(
-        `Spends ${money(spent)} · Loans ${money(loanPaid)} · Invested ${money(invested)} · Outflow ${money(outflow)}`,
+        `Earned ${money(earned)} · Spends ${money(spent)} · Loans ${money(loanPaid)} · Invested ${money(invested)} · Outflow ${money(outflow)}`,
         margin,
         margin + 11,
       );
@@ -391,7 +401,7 @@ function Reports({ data }: { data: ExpenseDataset }) {
     }
   };
 
-  const empty = expenses.length + investments.length + loans.length === 0;
+  const empty = expenses.length + investments.length + loans.length + earnings.length === 0;
 
   return (
     <div className="space-y-6">
@@ -467,7 +477,8 @@ function Reports({ data }: { data: ExpenseDataset }) {
         </div>
       </Panel>
 
-      <div data-pdf-block className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div data-pdf-block className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+        <StatCard label="Total earnings" value={money(earned)} tone="positive" hint={`${earnings.length} entries`} />
         <StatCard label="Total spends" value={money(spent)} hint={`${expenses.length} entries`} />
         <StatCard label="Loan paid" value={money(loanPaid)} hint={`${loans.length} payments`} />
         <StatCard label="Total outflow" value={money(outflow)} tone="negative" hint="Spends + loans" />
@@ -496,6 +507,7 @@ function Reports({ data }: { data: ExpenseDataset }) {
                 <Bar dataKey="Spends" fill={colorAt(0)} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Loans" fill={colorAt(2)} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Invested" fill={colorAt(1)} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Earnings" fill={colorAt(5)} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -512,6 +524,12 @@ function Reports({ data }: { data: ExpenseDataset }) {
             </ChartPanel>
             <ChartPanel title="Investments by category">
               <RankedBars buckets={invCats} limit={10} emptyMessage="No investments here." />
+            </ChartPanel>
+            <ChartPanel title="Earnings by category">
+              <Donut buckets={earningCats} />
+            </ChartPanel>
+            <ChartPanel title="Earnings by person">
+              <RankedBars buckets={earningUsers} label={userLabel} emptyMessage="No earnings here." />
             </ChartPanel>
           </div>
 
