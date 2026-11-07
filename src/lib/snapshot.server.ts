@@ -9,10 +9,12 @@
 import type {
   Expense,
   ExpenseDataset,
+  Earning,
   Investment,
   LoanRepayment,
   MonthlyBudget,
 } from "./expense-types";
+import { withEarningsDefaults } from "./earnings";
 
 /** Loose shape of the authenticated Supabase client handed to server functions. */
 export type Db = { from: (table: string) => any };
@@ -35,8 +37,9 @@ export async function readSnapshot(
     .maybeSingle();
 
   if (error || !data?.dataset) return null;
+  const dataset = withEarningsDefaults(data.dataset as ExpenseDataset);
   return {
-    data: data.dataset as ExpenseDataset,
+    data: dataset as ExpenseDataset,
     syncedAt: new Date(data.synced_at as string).getTime(),
   };
 }
@@ -76,6 +79,7 @@ export async function appendToSnapshot(
   spreadsheetId: string,
   entry:
     | { kind: "expense"; row: Expense }
+    | { kind: "earning"; row: Earning }
     | { kind: "investment"; row: Investment }
     | { kind: "loanRepayment"; row: LoanRepayment },
 ): Promise<void> {
@@ -87,6 +91,14 @@ export async function appendToSnapshot(
     data.expenses = [entry.row, ...data.expenses].sort(byDateDesc);
     if (entry.row.category && !data.categories.includes(entry.row.category)) {
       data.categories = [...data.categories, entry.row.category].sort();
+    }
+    if (entry.row.user && entry.row.user !== "unknown" && !data.users.includes(entry.row.user)) {
+      data.users = [...data.users, entry.row.user].sort();
+    }
+  } else if (entry.kind === "earning") {
+    data.earnings = [entry.row, ...(data.earnings ?? [])].sort(byDateDesc);
+    if (entry.row.category && !data.earningCategories.includes(entry.row.category)) {
+      data.earningCategories = [...data.earningCategories, entry.row.category].sort();
     }
     if (entry.row.user && entry.row.user !== "unknown" && !data.users.includes(entry.row.user)) {
       data.users = [...data.users, entry.row.user].sort();
@@ -135,6 +147,7 @@ export async function removeFromSnapshot(
         sheet?: string;
       }
     | { kind: "investment"; date: string; amount: number; category: string }
+    | { kind: "earning"; date: string; amount: number; category: string; user: string; description: string }
     | { kind: "loanRepayment"; date: string; amount: number; loan: string },
 ): Promise<void> {
   const snapshot = await readSnapshot(db, userId, spreadsheetId);
@@ -153,6 +166,12 @@ export async function removeFromSnapshot(
     );
     if (i === -1) return;
     data.expenses = data.expenses.filter((_, n) => n !== i);
+  } else if (entry.kind === "earning") {
+    const i = (data.earnings ?? []).findIndex(
+      (e) => e.date === entry.date && e.amount === entry.amount && e.category === entry.category && e.user === entry.user && e.description === entry.description,
+    );
+    if (i === -1) return;
+    data.earnings = data.earnings.filter((_, n) => n !== i);
   } else if (entry.kind === "loanRepayment") {
     const rows = data.loanRepayments ?? [];
     const i = rows.findIndex(
