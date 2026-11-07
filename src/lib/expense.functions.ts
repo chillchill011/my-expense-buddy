@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 import { EMPTY_DATASET, type ExpenseDataset } from "./expense-types";
+import { DEFAULT_EARNING_CATEGORIES } from "./earnings";
 
 export type DashboardResult =
   | { status: "ok"; data: ExpenseDataset; syncedAt: number; source: "cache" | "sheets" }
@@ -694,6 +695,8 @@ export const undoInvestment = createServerFn({ method: "POST" })
 const LOAN_REPAYMENT_HEADERS = ["Date", "Amount", "User", "Loan", "Description"];
 /** Column headings used when the "Monthly Budgets" tab has to be created. */
 const BUDGET_HEADERS = ["Month", "Budget Amount", "Notes", "Updated"];
+const EARNING_MASTER_HEADERS = ["Category"];
+const EARNINGS_HEADERS = ["Date", "Amount", "Category", "User", "Description"];
 
 export type AddLoanRepaymentInput = {
   amount: number;
@@ -899,5 +902,114 @@ export const setMonthlyBudget = createServerFn({ method: "POST" })
       const message = error instanceof Error ? error.message : String(error);
       console.error("Failed to save budget:", message);
       return { status: "error", message };
+    }
+  });
+
+export type AddEarningInput = {
+  amount: number;
+  date: string;
+  category: string;
+  user: string;
+  description: string;
+};
+
+export type AddEarningResult =
+  | { status: "added"; tab: string; row: number | null; date: string; createdTab?: boolean }
+  | { status: "error"; message: string };
+
+/** Writes earnings to their own Sheet tabs, then updates the fast local copy. */
+export const addEarning = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: AddEarningInput) => {
+    const amount = Number(input.amount);
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount greater than zero.");
+    const date = String(input.date ?? "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Choose a valid date.");
+    if (date > todayIsoDate()) throw new Error("Date cannot be in the future.");
+    const category = String(input.category ?? "").trim();
+    const user = String(input.user ?? "").trim();
+    if (!category) throw new Error("Choose an earning category.");
+    if (!user) throw new Error("Choose who received this earning.");
+    return {
+      amount,
+      date,
+      category: category.slice(0, 120),
+      user: user.slice(0, 60),
+      description: String(input.description ?? "").trim().slice(0, 300),
+    } satisfies AddEarningInput;
+  })
+  .handler(async ({ data, context }): Promise<AddEarningResult> => {
+    const { a1, appendRow, appendRows, ensureTab, getRange } = await import("./sheets.server");
+    const { invalidateExpenseCache } = await import("./expense-data.server");
+    const { appendToSnapshot } = await import("./snapshot.server");
+    const [year, month, day] = data.date.split("-") as [string, string, string];
+    const displayDate = `${day}/${month}/${year}`;
+    try {
+      const spreadsheetId = await spreadsheetFor(context);
+      if (!spreadsheetId) return { status: "error", message: "Link your Google Sheet before adding earnings." };
+
+      const createdMaster = await ensureTab(spreadsheetId, "Earning Master", EARNING_MASTER_HEADERS);
+      const masterRows = createdMaster ? [] : await getRange(spreadsheetId, a1("Earning Master", "A2:A"));
+      const hasCategories = masterRows.some((row) => String(row[0] ?? "").trim());
+      if (!hasCategories) {
+        await appendRows(spreadsheetId, "Earning Master", DEFAULT_EARNING_CATEGORIES.map((category) => [category]));
+      }
+
+      const createdTab = await ensureTab(spreadsheetId, "Earnings", EARNINGS_HEADERS);
+      const row = await appendRow(spreadsheetId, "Earnings", [
+        displayDate,
+        data.amount,
+        data.category,
+        data.user,
+        data.description,
+      ]);
+      invalidateExpenseCache(spreadsheetId);
+      await appendToSnapshot(context.supabase, context.userId, spreadsheetId, {
+        kind: "earning",
+        row: { date: data.date, amount: data.amount, category: data.category, user: data.user, description: data.description },
+      });
+      return { status: "added", tab: "Earnings", row, date: displayDate, createdTab };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to add earning:", message);
+      return { status: "error", message };
+    }
+  });
+
+/** Removes a just-added earning only if its Sheet row still matches. */
+export const undoEarning = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { row: number; amount: number; category: string; user: string; description: string }) => ({
+    row: Number(input.row),
+    amount: Number(input.amount),
+    category: String(input.category ?? "").trim(),
+    user: String(input.user ?? "").trim(),
+    description: String(input.description ?? "").trim(),
+  }))
+  .handler(async ({ data, context }): Promise<{ status: "removed" | "skipped"; message?: string }> => {
+    const { a1, deleteRow, getRange } = await import("./sheets.server");
+    const { invalidateExpenseCache } = await import("./expense-data.server");
+    const { removeFromSnapshot } = await import("./snapshot.server");
+    const { parseAmount, parseDate, text } = await import("./expense-normalize");
+    try {
+      const spreadsheetId = await spreadsheetFor(context);
+      if (!spreadsheetId) return { status: "skipped", message: "No sheet is linked." };
+      const row = (await getRange(spreadsheetId, a1("Earnings", `A${data.row}:E${data.row}`)))[0];
+      const date = parseDate(row?.[0]);
+      if (!row || parseAmount(row[1]) !== data.amount || text(row[2]) !== data.category || text(row[3]) !== data.user || text(row[4]) !== data.description) {
+        return { status: "skipped", message: "That earning has changed in the sheet." };
+      }
+      await deleteRow(spreadsheetId, "Earnings", data.row);
+      invalidateExpenseCache(spreadsheetId);
+      if (date) {
+        await removeFromSnapshot(context.supabase, context.userId, spreadsheetId, {
+          kind: "earning", date, amount: data.amount, category: data.category, user: data.user, description: data.description,
+        });
+      }
+      return { status: "removed" };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Failed to undo earning:", message);
+      return { status: "skipped", message };
     }
   });
