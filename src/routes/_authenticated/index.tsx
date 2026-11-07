@@ -1,11 +1,12 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowDownRight, Banknote, TrendingUp, Wallet } from "lucide-react";
+import { ArrowDownRight, Banknote, CircleDollarSign, TrendingUp, Wallet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 
 import { AppShell } from "@/components/AppShell";
 import { BudgetPanel } from "@/components/BudgetPanel";
+import { EarningAdd } from "@/components/EarningAdd";
 import { DataLoadError, DataQualityNotice, SetupNotice } from "@/components/DashboardState";
 import { SelectField } from "@/components/Filters";
 import { EmptyState, Panel, SectionHeading, UserSplit } from "@/components/Panels";
@@ -76,9 +77,15 @@ function OverviewPage() {
 }
 
 function Overview({ data }: { data: ExpenseDataset }) {
-  const { expenses, investments, loanRepayments, issues } = data;
+  const { expenses, investments, loanRepayments, earnings, issues } = data;
 
-  const months = useMemo(() => availableMonths(expenses), [expenses]);
+  const months = useMemo(() => {
+    const now = new Date();
+    const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    return Array.from(
+      new Set([...availableMonths(expenses), ...earnings.map((earning) => earning.date.slice(0, 7)), current]),
+    ).sort((a, b) => (a < b ? 1 : -1));
+  }, [expenses, earnings]);
   // Start on the real current month, never a stray future-dated row.
   const [month, setMonth] = useState(() => {
     const now = new Date();
@@ -99,25 +106,16 @@ function Overview({ data }: { data: ExpenseDataset }) {
     () => inMonth(loanRepayments ?? [], month),
     [loanRepayments, month],
   );
+  const monthEarnings = useMemo(() => inMonth(earnings, month), [earnings, month]);
   const invested = sum(monthInvestments);
   const repaid = sum(monthRepayments);
+  const earned = sum(monthEarnings);
   const outflow = total + repaid;
-
-  // A brand-new sheet has no rows yet: still show the add box so the very
-  // first entry can be made right here.
-  if (months.length === 0) {
-    return (
-      <div className="space-y-6">
-        <QuickAdd data={data} />
-        <EmptyState message="Welcome to Rupeeflow. Add your first expense above to get started." />
-      </div>
-    );
-  }
-
 
   return (
     <div className="space-y-6">
       <QuickAdd data={data} />
+      <EarningAdd data={data} />
 
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -138,7 +136,7 @@ function Overview({ data }: { data: ExpenseDataset }) {
 
       <DataQualityNotice issues={issues} />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard
           label="Total spends"
           value={money(total)}
@@ -168,6 +166,13 @@ function Overview({ data }: { data: ExpenseDataset }) {
           value={money(repaid)}
           icon={<ArrowDownRight className="size-4" />}
           hint={`${monthRepayments.length} payments`}
+        />
+        <StatCard
+          label="Total earnings"
+          value={money(earned)}
+          tone="positive"
+          icon={<CircleDollarSign className="size-4" />}
+          hint={`${monthEarnings.length} income entries`}
         />
       </div>
 
