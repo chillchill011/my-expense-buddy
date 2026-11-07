@@ -16,11 +16,13 @@ import {
   type Row,
 } from "./expense-normalize";
 import { a1, batchGetRanges, listTabTitles } from "./sheets.server";
+import { DEFAULT_EARNING_CATEGORIES } from "./earnings";
 import type {
   CategoryRule,
   DataQualityIssue,
   Expense,
   ExpenseDataset,
+  Earning,
   Investment,
   InvestmentAccount,
   LoanAccount,
@@ -32,6 +34,8 @@ const MASTER_TAB = "Master";
 const LOAN_MASTER_TAB = "Loan Master";
 const INVESTMENT_MASTER_TAB = "Investment Master";
 export const BUDGET_TAB = "Monthly Budgets";
+const EARNING_MASTER_TAB = "Earning Master";
+const EARNINGS_TAB = "Earnings";
 
 
 /** The bot has used both spellings over time. */
@@ -82,6 +86,8 @@ export async function loadExpenseDataset(
     : null;
   const loanRepaymentRange = loanTab ? a1(loanTab, "A2:E") : null;
   const budgetRange = titles.includes(BUDGET_TAB) ? a1(BUDGET_TAB, "A2:D") : null;
+  const earningMasterRange = titles.includes(EARNING_MASTER_TAB) ? a1(EARNING_MASTER_TAB, "A2:A") : null;
+  const earningsRange = titles.includes(EARNINGS_TAB) ? a1(EARNINGS_TAB, "A2:E") : null;
 
   for (const r of [
     masterRange,
@@ -89,6 +95,8 @@ export async function loadExpenseDataset(
     investmentMasterRange,
     loanRepaymentRange,
     budgetRange,
+    earningMasterRange,
+    earningsRange,
   ]) {
     if (r) ranges.push(r);
   }
@@ -253,13 +261,40 @@ export async function loadExpenseDataset(
   }
   const budgets = Array.from(budgetMap.values()).sort((a, b) => (a.month < b.month ? 1 : -1));
 
+  // --- Earnings: Date | Amount | Category | User | Description ---
+  const earnings: Earning[] = [];
+  for (const row of rowsFor(earningsRange)) {
+    if (isHeaderRow(row)) continue;
+    const date = parseDate(row[0]);
+    const amount = parseAmount(row[1]);
+    if (!date || amount === null || amount === 0) continue;
+    earnings.push({
+      date,
+      amount,
+      category: normalizeLabel(row[2]) || "Other",
+      user: text(row[3]) || "unknown",
+      description: text(row[4]),
+    });
+  }
+  earnings.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+  const earningCategories = Array.from(
+    new Set([
+      ...DEFAULT_EARNING_CATEGORIES,
+      ...rowsFor(earningMasterRange).map((row) => normalizeLabel(row[0])).filter(Boolean),
+      ...earnings.map((earning) => earning.category).filter(Boolean),
+    ]),
+  ).sort((a, b) => a.localeCompare(b));
+
   const categories = Array.from(
     new Set([...rules.map((r) => r.category), ...expenses.map((e) => e.category)]),
   )
     .filter(Boolean)
     .sort();
 
-  const users = Array.from(new Set(expenses.map((e) => e.user)))
+  const users = Array.from(
+    new Set([...expenses, ...investments, ...loanRepayments, ...earnings].map((e) => e.user)),
+  )
     .filter((u) => u && u !== "unknown")
     .sort();
 
@@ -267,6 +302,8 @@ export async function loadExpenseDataset(
     expenses,
     investments,
     loanRepayments,
+    earnings,
+    earningCategories,
     budgets,
 
     loanAccounts,
